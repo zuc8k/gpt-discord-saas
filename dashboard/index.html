@@ -10,6 +10,31 @@
   <!-- ⭐ Stars Background -->
   <canvas id="stars"></canvas>
 
+  <!-- ================== PLAN SWITCHER (GPT STYLE) ================== -->
+  <div class="plan-switcher">
+
+    <button class="plan-btn" onclick="togglePlans()">
+      <span id="currentPlan">FREE</span>
+      <small>Current Plan</small>
+    </button>
+
+    <div class="plan-dropdown" id="planDropdown">
+      <div class="plan-item active" onclick="selectPlan('FREE')">
+        FREE <span>✔</span>
+      </div>
+      <div class="plan-item" onclick="selectPlan('PRIME')">
+        PRIME
+      </div>
+      <div class="plan-item" onclick="selectPlan('PREMIUM')">
+        PREMIUM
+      </div>
+      <div class="plan-item" onclick="selectPlan('MAX')">
+        MAX
+      </div>
+    </div>
+
+  </div>
+
   <div class="layout">
 
     <!-- ================== SIDEBAR ================== -->
@@ -22,12 +47,12 @@
 
       <!-- MENU -->
       <nav class="menu">
-        <a href="index.html" id="nav-dashboard">🏠 Dashboard</a>
+        <a href="index.html" id="nav-dashboard" class="active">🏠 Dashboard</a>
         <a href="staff.html" id="nav-staff">👥 Staff</a>
         <a href="logs.html" id="nav-logs">🧾 Logs</a>
       </nav>
 
-      <!-- USER PROFILE (BOTTOM) -->
+      <!-- USER PROFILE -->
       <div class="profile">
         <div class="avatar" id="profileAvatar">👤</div>
         <div class="info">
@@ -37,9 +62,7 @@
       </div>
 
       <!-- LOGOUT -->
-      <button
-        style="margin-top: 12px; width: 100%;"
-        onclick="logout()">
+      <button style="margin-top: 12px; width: 100%;" onclick="logout()">
         Logout
       </button>
 
@@ -56,7 +79,7 @@
         <button onclick="login()">Login</button>
       </div>
 
-      <!-- STAFF INFO (اختياري) -->
+      <!-- STAFF INFO -->
       <div id="info"></div>
 
       <!-- GUILDS -->
