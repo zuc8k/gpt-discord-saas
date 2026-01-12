@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GPT Chat</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+
+  <!-- ⭐ Stars -->
+  <canvas id="stars"></canvas>
+
+  <!-- ================== PLAN SWITCHER ================== -->
+  <div class="plan-switcher">
+    <button class="plan-btn" id="planBtn">
+      <span id="currentPlan">FREE</span>
+      <small>Current Plan</small>
+    </button>
+
+    <div class="plan-dropdown" id="planDropdown">
+      <div class="plan-item active" data-plan="FREE" onclick="selectPlan('FREE')">FREE</div>
+      <div class="plan-item" data-plan="PRIME" onclick="selectPlan('PRIME')">PRIME</div>
+      <div class="plan-item" data-plan="PREMIUM" onclick="selectPlan('PREMIUM')">PREMIUM</div>
+      <div class="plan-item" data-plan="MAX" onclick="selectPlan('MAX')">MAX</div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- ================== SIDEBAR ================== -->
+    <aside class="sidebar">
+      <div class="logo">🤖 GPT Bot</div>
+
+      <nav class="menu">
+        <a href="index.html">🏠 Dashboard</a>
+        <a href="chat.html" class="active">💬 Chat</a>
+        <a href="staff.html">👥 Staff</a>
+        <a href="logs.html">🧾 Logs</a>
+      </nav>
+
+      <div class="profile">
+        <div class="avatar" id="profileAvatar">👤</div>
+        <div class="info">
+          <span id="profileName">Guest</span>
+          <small id="profileRole">---</small>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================== CHAT ================== -->
+    <main class="content chat-page">
+
+      <div class="chat-container" id="chatContainer">
+        <!-- messages هنا -->
+      </div>
+
+      <!-- INPUT -->
+      <div class="chat-input">
+        <textarea
+          id="chatInput"
+          placeholder="Send a message..."
+          rows="1"></textarea>
+        <button id="sendBtn">➤</button>
+      </div>
+
+    </main>
+
+  </div>
+
+  <script src="stars.js"></script>
+  <script src="script.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
