@@ -1,5 +1,6 @@
 const checkPermission = require("../middlewares/checkPermission");
 const checkPlan = require("../middlewares/checkPlan");
+const checkCommandLimit = require("../middlewares/checkCommandLimit");
 
 module.exports = async (client, interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -30,6 +31,16 @@ module.exports = async (client, interaction) => {
           ephemeral: true
         });
       }
+    }
+
+    // ================== COMMAND LIMIT CHECK ==================
+    const limitCheck = await checkCommandLimit(interaction);
+
+    if (!limitCheck.allowed) {
+      return interaction.reply({
+        content: limitCheck.message || "⚠️ وصلت للحد الأقصى لاستخدام الأمر",
+        ephemeral: true
+      });
     }
 
     // ================== EXECUTE ==================
