@@ -2,6 +2,7 @@
 const chatContainer = document.getElementById("chatContainer");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
+const imageInput = document.getElementById("imageInput");
 
 /* ================== CONFIG ================== */
 const API_URL = "http://localhost:3001"; // عدّل لو VPS
@@ -10,6 +11,9 @@ const STAFF_TOKEN = localStorage.getItem("STAFF_TOKEN");
 // جيلد افتراضي – لاحقًا تختاره من UI
 const CURRENT_GUILD_ID =
   localStorage.getItem("CHAT_GUILD_ID") || "TEST_GUILD";
+
+/* ================== STATE ================== */
+let selectedImage = null;
 
 /* ================== INIT ================== */
 document.addEventListener("DOMContentLoaded", () => {
@@ -32,6 +36,30 @@ chatInput.addEventListener("keydown", e => {
   }
 });
 
+// اختيار صورة
+imageInput?.addEventListener("change", handleImageSelect);
+
+/* ================== IMAGE HANDLER ================== */
+function handleImageSelect() {
+  const file = imageInput.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    addSystemMessage("❌ الملف لازم يكون صورة");
+    imageInput.value = "";
+    return;
+  }
+
+  selectedImage = file;
+
+  // Preview للصورة
+  const reader = new FileReader();
+  reader.onload = () => {
+    addImageMessage(reader.result, "user");
+  };
+  reader.readAsDataURL(file);
+}
+
 /* ================== LOAD HISTORY ================== */
 async function loadHistory() {
   try {
@@ -50,7 +78,11 @@ async function loadHistory() {
     chatContainer.innerHTML = "";
 
     messages.forEach(m => {
-      addMessage(m.content, m.role);
+      if (m.imageUrl) {
+        addImageMessage(m.imageUrl, m.role);
+      } else {
+        addMessage(m.content, m.role);
+      }
     });
 
   } catch (err) {
@@ -62,34 +94,43 @@ async function loadHistory() {
 /* ================== SEND MESSAGE ================== */
 async function sendMessage() {
   const text = chatInput.value.trim();
-  if (!text) return;
+
+  if (!text && !selectedImage) return;
 
   if (!STAFF_TOKEN) {
     addMessage("❌ لازم تسجل دخول الأول", "assistant");
     return;
   }
 
-  // رسالة المستخدم
-  addMessage(text, "user");
+  // عرض رسالة المستخدم
+  if (text) addMessage(text, "user");
+
   chatInput.value = "";
   chatInput.style.height = "auto";
 
   showTyping();
 
   try {
+    const formData = new FormData();
+    formData.append("guildId", CURRENT_GUILD_ID);
+    formData.append("message", text);
+
+    if (selectedImage) {
+      formData.append("image", selectedImage);
+    }
+
     const res = await fetch(`${API_URL}/chat/send`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Authorization: STAFF_TOKEN
       },
-      body: JSON.stringify({
-        guildId: CURRENT_GUILD_ID,
-        message: text
-      })
+      body: formData
     });
 
     removeTyping();
+    selectedImage = null;
+    imageInput.value = "";
+
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
@@ -100,7 +141,7 @@ async function sendMessage() {
     // رد GPT
     addMessage(data.reply, "assistant");
 
-    // Info خفيف تحت الرسالة
+    // Info خفيف
     if (data.plan && data.usage) {
       addSystemMessage(
         `📦 ${data.plan} | اليومي: ${data.usage.daily}/${data.usage.dailyLimit}`
@@ -144,6 +185,19 @@ function addMessage(text, type) {
   const div = document.createElement("div");
   div.className = `message ${type}`;
   div.textContent = text;
+  chatContainer.appendChild(div);
+  scrollDown();
+}
+
+function addImageMessage(src, type) {
+  const div = document.createElement("div");
+  div.className = `message ${type}`;
+
+  const img = document.createElement("img");
+  img.src = src;
+  img.className = "chat-image";
+
+  div.appendChild(img);
   chatContainer.appendChild(div);
   scrollDown();
 }
