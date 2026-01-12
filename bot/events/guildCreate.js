@@ -2,7 +2,8 @@ const {
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonStyle
+  ButtonStyle,
+  PermissionsBitField
 } = require("discord.js");
 
 const Guild = require("../../api/models/Guild");
@@ -10,11 +11,12 @@ const plans = require("../../shared/plans");
 
 module.exports = async (client, guild) => {
   try {
-    // ================== CREATE DB RECORD ==================
+    // ================== CHECK DB ==================
     const exists = await Guild.findOne({ guildId: guild.id });
     if (exists) return;
 
-    const newGuild = new Guild({
+    // ================== CREATE GUILD ==================
+    const newGuild = await Guild.create({
       guildId: guild.id,
       plan: "FREE",
 
@@ -31,13 +33,13 @@ module.exports = async (client, guild) => {
       expiresAt: Date.now() + plans.FREE.days * 24 * 60 * 60 * 1000
     });
 
-    await newGuild.save();
-
     // ================== FIND CHANNEL ==================
-    const channel =
+    let channel =
       guild.systemChannel ||
-      guild.channels.cache.find(
-        c => c.isTextBased() && c.permissionsFor(guild.members.me).has("SendMessages")
+      guild.channels.cache.find(c =>
+        c.isTextBased() &&
+        c.permissionsFor(guild.members.me)
+          ?.has(PermissionsBitField.Flags.SendMessages)
       );
 
     if (!channel) return;
@@ -45,39 +47,49 @@ module.exports = async (client, guild) => {
     // ================== EMBED ==================
     const embed = new EmbedBuilder()
       .setColor("#5865F2")
-      .setTitle("🤖 GPT Bot Activated")
+      .setTitle("🤖 GPT Bot Activated Successfully!")
       .setDescription(
         `
-🎉 **أهلاً بيك!**
+🎉 **أهلاً بيكم في عالم الذكاء الاصطناعي 😎**
 
-البوت اتفعل عندك بنجاح 😎  
-عندك **7 أيام تجربة مجانية**.
+أنا **GPT Bot**  
+هزار شوية 🤪  
+ذكي شوية 🧠  
+ومصري على مزاجك 🇪🇬🔥  
 
-🧠 **الميزات:**
-• شات GPT هزار وذكي 😂  
-• عربي 🇪🇬 / English 🇺🇸 تلقائي  
+🎁 **Free Trial – 7 Days**
+• شات GPT كامل  
+• عربي / English تلقائي  
+• هزار + ردود ذكية  
 • دعم صور 🖼️  
-• Limits ذكية حسب الباقة  
+• Limits حسب الباقة  
 
-⏳ بعد انتهاء التجربة:
-🔒 الشات هيقف  
-📩 هيظهر تنبيه للاشتراك
+⏳ **بعد انتهاء التجربة:**
+🔒 الشات هيقف تلقائي  
+📩 هيجيلك تنبيه للاشتراك  
 
-👑 **صُنع بواسطة: Boody Zuckerberg**
+⚙️ **ابدأ دلوقتي**
+اكتب:
+/setup-gpt
+وحدد قناة الشات 👇
+
+👑 **Created by: Boody Zuckerberg**
         `
       )
       .setFooter({
-        text: "FREE Trial – 7 Days"
-      });
+        text: "FREE Trial Active • 7 Days"
+      })
+      .setTimestamp();
 
     // ================== BUTTON ==================
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setLabel("Support Server")
+        .setLabel("💬 Support Server")
         .setStyle(ButtonStyle.Link)
-        .setURL("https://discord.gg/YOUR_SUPPORT_SERVER")
+        .setURL("https://discord.gg/YOUR_SUPPORT_SERVER") // 🔴 غير الرابط
     );
 
+    // ================== SEND ==================
     await channel.send({
       embeds: [embed],
       components: [row]
