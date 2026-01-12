@@ -54,10 +54,19 @@ const guildSchema = new mongoose.Schema({
     default: Date.now
   },
 
-  // ================== COMMAND LIMITS ==================
+  // ================== COMMAND LIMITS (MONTHLY) ==================
   // مثال:
   // { ask: 3, upgrade: 1 }
   commandUsage: {
+    type: Map,
+    of: Number,
+    default: {}
+  },
+
+  // ================== COMMAND LIMITS (DAILY) ==================
+  // مثال:
+  // { ask: 1, upgrade: 0 }
+  dailyCommandUsage: {
     type: Map,
     of: Number,
     default: {}
