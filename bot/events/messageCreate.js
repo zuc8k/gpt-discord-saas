@@ -9,15 +9,18 @@ const { isBlocked } = require("../services/contentFilter");
 const { checkSpam } = require("../services/antiSpam");
 
 module.exports = async (client, message) => {
+  let replied = false;
+
   try {
-    if (message.author.bot) return;
-    if (!message.guild) return;
+    if (!message || !message.guild) return;
+    if (message.author?.bot) return;
 
     // ================== EMPTY MESSAGE ==================
     if (!message.content || !message.content.trim()) return;
 
     // ================== ANTI SPAM ==================
     if (checkSpam(message.author.id)) {
+      replied = true;
       return message.reply("⏳ استنى شوية قبل ما تبعت تاني");
     }
 
@@ -37,6 +40,7 @@ module.exports = async (client, message) => {
 
       await guild.save();
 
+      replied = true;
       return message.reply(
         "🎉 تم تفعيل النسخة التجريبية **FREE** لمدة 7 أيام\n" +
         "📊 Limit: 10,000 سطر\n" +
@@ -57,6 +61,7 @@ module.exports = async (client, message) => {
           `Message: ${message.content.slice(0, 200)}`
       });
 
+      replied = true;
       return message.reply("🚫 الطلب غير مسموح");
     }
 
@@ -80,6 +85,7 @@ module.exports = async (client, message) => {
         description: `User: ${message.author.tag}`
       });
 
+      replied = true;
       return message.reply(
         "❌ انتهت مدة الاستخدام\n" +
         "🔗 SERVER SUPPORT"
@@ -90,6 +96,7 @@ module.exports = async (client, message) => {
     const userLines = countLines(message.content);
 
     if (userLines > 500) {
+      replied = true;
       return message.reply("⚠️ الرسالة طويلة جدًا");
     }
 
@@ -102,11 +109,12 @@ module.exports = async (client, message) => {
           `Used: ${guild.usedLines}/${guild.monthlyLimit}`
       });
 
+      replied = true;
       return message.reply("⚠️ وصلت للحد الأقصى للباقة");
     }
 
     // ================== GPT RESPONSE ==================
-    await message.channel.sendTyping();
+    const typing = message.channel.sendTyping();
 
     const reply = await askGPT(message.content);
     const botLines = countLines(reply);
@@ -123,13 +131,17 @@ module.exports = async (client, message) => {
         `Total: ${guild.usedLines}/${guild.monthlyLimit}`
     });
 
+    await typing;
+    replied = true;
     await message.reply(reply);
 
   } catch (err) {
     console.error("❌ messageCreate error:", err);
 
-    try {
-      await message.reply("❌ حصل خطأ مؤقت، حاول لاحقًا");
-    } catch {}
+    if (!replied) {
+      try {
+        await message.reply("❌ حصل خطأ مؤقت، حاول لاحقًا");
+      } catch {}
+    }
   }
 };
