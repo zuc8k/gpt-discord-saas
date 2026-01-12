@@ -1,0 +1,20 @@
+{
+  "name": "gpt-discord-bot",
+  "version": "1.0.0",
+  "description": "GPT Discord Bot with plans, limits, and fun personality",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "mongoose": "^8.0.0",
+    "dotenv": "^16.3.1",
+    "openai": "^4.0.0",
+    "chokidar": "^3.5.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
