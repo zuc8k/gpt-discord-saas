@@ -7,7 +7,7 @@
 </head>
 <body>
 
-  <!-- ⭐ Stars -->
+  <!-- ⭐ Stars Background -->
   <canvas id="stars"></canvas>
 
   <div class="layout">
@@ -15,24 +15,33 @@
     <!-- ================== SIDEBAR ================== -->
     <aside class="sidebar">
 
+      <!-- LOGO -->
       <div class="logo">
         🤖 GPT Bot
       </div>
 
+      <!-- MENU -->
       <nav class="menu">
-        <a href="index.html" class="active">🏠 Dashboard</a>
-        <a href="staff.html">👥 Staff</a>
-        <a href="logs.html">🧾 Logs</a>
+        <a href="index.html" id="nav-dashboard">🏠 Dashboard</a>
+        <a href="staff.html" id="nav-staff">👥 Staff</a>
+        <a href="logs.html" id="nav-logs">🧾 Logs</a>
       </nav>
 
       <!-- USER PROFILE (BOTTOM) -->
       <div class="profile">
-        <div class="avatar">👤</div>
+        <div class="avatar" id="profileAvatar">👤</div>
         <div class="info">
           <span id="profileName">Guest</span>
           <small id="profileRole">---</small>
         </div>
       </div>
+
+      <!-- LOGOUT -->
+      <button
+        style="margin-top: 12px; width: 100%;"
+        onclick="logout()">
+        Logout
+      </button>
 
     </aside>
 
@@ -41,19 +50,23 @@
 
       <h1>🤖 Staff Dashboard</h1>
 
+      <!-- LOGIN -->
       <div class="login">
         <input type="password" id="token" placeholder="STAFF TOKEN">
         <button onclick="login()">Login</button>
       </div>
 
+      <!-- STAFF INFO (اختياري) -->
       <div id="info"></div>
 
+      <!-- GUILDS -->
       <div id="guilds"></div>
 
     </main>
 
   </div>
 
+  <!-- Scripts -->
   <script src="stars.js"></script>
   <script src="script.js"></script>
 </body>
