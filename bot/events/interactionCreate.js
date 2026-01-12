@@ -1,4 +1,5 @@
 const checkPermission = require("../middlewares/checkPermission");
+const checkPlan = require("../middlewares/checkPlan");
 
 module.exports = async (client, interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -7,13 +8,25 @@ module.exports = async (client, interaction) => {
   if (!command) return;
 
   try {
-    // ================== PERMISSION CHECK ==================
+    // ================== PERMISSION CHECK (OWNER / ADMIN / USER) ==================
     if (command.permission) {
       const allowed = checkPermission(interaction, command.permission);
 
       if (!allowed) {
         return interaction.reply({
           content: "❌ ليس لديك صلاحية استخدام هذا الأمر",
+          ephemeral: true
+        });
+      }
+    }
+
+    // ================== PLAN CHECK (FREE / PRIME / PREMIUM / MAX) ==================
+    if (command.minPlan) {
+      const allowedPlan = await checkPlan(interaction, command.minPlan);
+
+      if (!allowedPlan) {
+        return interaction.reply({
+          content: `🔒 الأمر ده متاح من باقة **${command.minPlan}** أو أعلى`,
           ephemeral: true
         });
       }
