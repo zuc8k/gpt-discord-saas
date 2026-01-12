@@ -7,7 +7,7 @@ const sendBtn = document.getElementById("sendBtn");
 const API_URL = "http://localhost:3001"; // عدّل لو VPS
 const STAFF_TOKEN = localStorage.getItem("STAFF_TOKEN");
 
-// جيلد افتراضي – بعدين تختاره من UI
+// جيلد افتراضي – لاحقًا تختاره من UI
 const CURRENT_GUILD_ID =
   localStorage.getItem("CHAT_GUILD_ID") || "TEST_GUILD";
 
@@ -15,6 +15,7 @@ const CURRENT_GUILD_ID =
 document.addEventListener("DOMContentLoaded", () => {
   if (!STAFF_TOKEN) {
     addSystemMessage("🔐 لازم تسجل دخول الأول");
+    disableChat();
     return;
   }
 
@@ -37,7 +38,9 @@ async function loadHistory() {
     const res = await fetch(
       `${API_URL}/chat/history/${CURRENT_GUILD_ID}`,
       {
-        headers: { Authorization: STAFF_TOKEN }
+        headers: {
+          Authorization: STAFF_TOKEN
+        }
       }
     );
 
@@ -51,7 +54,8 @@ async function loadHistory() {
     });
 
   } catch (err) {
-    console.error("History error:", err);
+    console.error("❌ History error:", err);
+    addSystemMessage("⚠️ فشل تحميل المحادثات السابقة");
   }
 }
 
@@ -96,7 +100,7 @@ async function sendMessage() {
     // رد GPT
     addMessage(data.reply, "assistant");
 
-    // Info سطر خفيف
+    // Info خفيف تحت الرسالة
     if (data.plan && data.usage) {
       addSystemMessage(
         `📦 ${data.plan} | اليومي: ${data.usage.daily}/${data.usage.dailyLimit}`
@@ -104,7 +108,7 @@ async function sendMessage() {
     }
 
   } catch (err) {
-    console.error("Chat Error:", err);
+    console.error("❌ Chat Error:", err);
     removeTyping();
     addMessage("❌ السيرفر مش متاح دلوقتي", "assistant");
   }
@@ -112,27 +116,27 @@ async function sendMessage() {
 
 /* ================== ERROR HANDLER ================== */
 function handleChatError(data) {
-  if (data.code === "EXPIRED") {
-    addMessage("⏳ الاشتراك منتهي، جدده علشان تكمل", "assistant");
-    return;
-  }
+  switch (data.code) {
+    case "EXPIRED":
+      addMessage("⏳ الاشتراك منتهي، جدده علشان تكمل", "assistant");
+      disableChat();
+      break;
 
-  if (data.code === "DAILY_LIMIT") {
-    addMessage("🚫 وصلت للحد اليومي للرسائل", "assistant");
-    return;
-  }
+    case "DAILY_LIMIT":
+      addMessage("🚫 وصلت للحد اليومي للرسائل", "assistant");
+      break;
 
-  if (data.code === "MONTHLY_LIMIT") {
-    addMessage("📆 وصلت للحد الشهري", "assistant");
-    return;
-  }
+    case "MONTHLY_LIMIT":
+      addMessage("📆 وصلت للحد الشهري", "assistant");
+      break;
 
-  if (data.code === "BLOCKED") {
-    addMessage("🚫 الرسالة دي غير مسموح بيها", "assistant");
-    return;
-  }
+    case "BLOCKED":
+      addMessage("🚫 الرسالة دي غير مسموح بيها", "assistant");
+      break;
 
-  addMessage(data.message || data.error || "❌ حصل خطأ", "assistant");
+    default:
+      addMessage(data.message || data.error || "❌ حصل خطأ", "assistant");
+  }
 }
 
 /* ================== UI HELPERS ================== */
@@ -175,4 +179,9 @@ function removeTyping() {
 
 function scrollDown() {
   chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function disableChat() {
+  chatInput.disabled = true;
+  sendBtn.disabled = true;
 }
