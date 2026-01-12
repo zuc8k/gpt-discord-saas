@@ -1,21 +1,65 @@
 const mongoose = require("mongoose");
 
 const guildSchema = new mongoose.Schema({
-  guildId: { type: String, unique: true },
+  // ================== BASIC ==================
+  guildId: {
+    type: String,
+    unique: true,
+    required: true
+  },
 
-  plan: { type: String, default: "FREE" },
+  // ================== PLAN ==================
+  plan: {
+    type: String,
+    enum: ["FREE", "PRIME", "PREMIUM", "MAX"],
+    default: "FREE"
+  },
 
   expiresAt: Date,
 
-  monthlyLimit: Number,
-  yearlyLimit: Number,
+  // ================== LIMITS ==================
+  monthlyLimit: {
+    type: Number,
+    default: 0
+  },
 
-  usedLines: { type: Number, default: 0 },
+  yearlyLimit: {
+    type: Number,
+    default: 0
+  },
 
-  lastReset: Date,
+  usedLines: {
+    type: Number,
+    default: 0
+  },
 
-  logsChannel: String,
-  gptChannel: String
-}, { timestamps: true });
+  // ================== COMMAND LIMITS ==================
+  // مثال:
+  // { ask: 3, upgrade: 1 }
+  commandUsage: {
+    type: Map,
+    of: Number,
+    default: {}
+  },
+
+  lastReset: {
+    type: Date,
+    default: Date.now
+  },
+
+  // ================== CHANNELS ==================
+  logsChannel: {
+    type: String,
+    default: null
+  },
+
+  gptChannel: {
+    type: String,
+    default: null
+  }
+
+}, {
+  timestamps: true
+});
 
 module.exports = mongoose.model("Guild", guildSchema);
