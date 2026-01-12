@@ -19,19 +19,32 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ Mongo Error:", err));
 
-// ================== COMMAND HANDLER ==================
-const loadCommands = require("./handlers/commandHandler");
-loadCommands(client);
+// ================== COMMANDS (HOT RELOAD) ==================
+const { loadCommands } = require("./handlers/commandHandler");
+const watchCommands = require("./handlers/commandWatcher");
+
+loadCommands(client);     // تحميل الأوامر أول مرة
+watchCommands(client);   // مراقبة أي تعديل في فولدر commands
 
 // ================== EVENTS HANDLER ==================
 const eventsPath = path.join(__dirname, "events");
-const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith(".js"));
+const eventFiles = fs.readdirSync(eventsPath).filter(file =>
+  file.endsWith(".js")
+);
 
 for (const file of eventFiles) {
-  const event = require(`./events/${file}`);
-  const eventName = file.split(".")[0];
+  const filePath = path.join(eventsPath, file);
 
-  client.on(eventName, (...args) => event(client, ...args));
+  try {
+    const event = require(filePath);
+    const eventName = file.split(".")[0];
+
+    client.on(eventName, (...args) => event(client, ...args));
+    console.log(`📡 Loaded Event: ${eventName}`);
+
+  } catch (err) {
+    console.error(`❌ Failed to load event ${file}`, err);
+  }
 }
 
 // ================== READY ==================
