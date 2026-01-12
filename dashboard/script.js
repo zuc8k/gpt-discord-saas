@@ -8,12 +8,13 @@ let STAFF_USERNAME = null;
 let ALL_LOGS = [];
 
 /* ================== CURRENT PLAN (UI) ================== */
-let CURRENT_PLAN = "FREE";
+let CURRENT_PLAN = localStorage.getItem("CURRENT_PLAN") || "FREE";
 
 /* ================== AUTO LOGIN ================== */
 document.addEventListener("DOMContentLoaded", () => {
   highlightMenu();
   initPlanSwitcher();
+  loadCurrentPlanUI();
 
   if (STAFF_TOKEN) login(true);
 });
@@ -52,7 +53,6 @@ async function login(silent = false, requireRole = null) {
   localStorage.setItem("STAFF_TOKEN", token);
 
   fillProfile();
-  loadCurrentPlanUI();
 
   if (document.getElementById("guilds")) loadGuilds();
   if (document.getElementById("staffList")) loadStaff();
@@ -83,36 +83,43 @@ function initPlanSwitcher() {
 
   if (!btn || !dropdown) return;
 
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
     dropdown.classList.toggle("show");
   });
 
   document.addEventListener("click", e => {
-    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+    if (!dropdown.contains(e.target)) {
       dropdown.classList.remove("show");
     }
   });
 }
 
 function loadCurrentPlanUI() {
-  // افتراضيًا – تقدر تجيبها من API بعدين
   setPlanUI(CURRENT_PLAN);
 }
 
 function setPlanUI(plan) {
   CURRENT_PLAN = plan;
+  localStorage.setItem("CURRENT_PLAN", plan);
 
   const label = document.getElementById("currentPlan");
   if (label) label.textContent = plan;
 
   document.querySelectorAll(".plan-item").forEach(item => {
-    item.classList.toggle("active", item.dataset.plan === plan);
+    item.classList.toggle(
+      "active",
+      item.dataset.plan === plan
+    );
   });
 }
 
 function selectPlan(plan) {
   setPlanUI(plan);
   document.getElementById("planDropdown")?.classList.remove("show");
+
+  // مستقبلاً:
+  // openBillingModal(plan);
 }
 
 /* ================== MENU ACTIVE ================== */
@@ -149,9 +156,10 @@ async function loadGuilds() {
 
   container.innerHTML = "";
 
-  guilds.forEach(g => {
+  guilds.forEach((g, i) => {
     const div = document.createElement("div");
     div.className = "card";
+    div.style.animationDelay = `${i * 0.05}s`;
 
     let actions = "";
 
@@ -169,13 +177,17 @@ async function loadGuilds() {
           <option value="yearly">Yearly</option>
         </select>
 
-        <button onclick="updatePlan('${g.guildId}')">Update Plan</button>
+        <button onclick="updatePlan('${g.guildId}')">
+          Update Plan
+        </button>
       `;
     }
 
     if (["OWNER", "ADMIN", "SUPPORT"].includes(STAFF_ROLE)) {
       actions += `
-        <button onclick="resetUsage('${g.guildId}')">Reset Usage</button>
+        <button onclick="resetUsage('${g.guildId}')">
+          Reset Usage
+        </button>
       `;
     }
 
@@ -196,8 +208,8 @@ async function loadGuilds() {
 
 /* ================== UPDATE PLAN ================== */
 async function updatePlan(guildId) {
-  const plan = document.getElementById(`plan-${guildId}`).value;
-  const duration = document.getElementById(`duration-${guildId}`).value;
+  const plan = document.getElementById(`plan-${guildId}`)?.value;
+  const duration = document.getElementById(`duration-${guildId}`)?.value;
 
   const res = await fetch(`${API_URL}/admin/guild/${guildId}/plan`, {
     method: "POST",
@@ -243,15 +255,18 @@ async function loadStaff() {
 
   container.innerHTML = "";
 
-  staff.forEach(s => {
+  staff.forEach((s, i) => {
     const div = document.createElement("div");
     div.className = "card";
+    div.style.animationDelay = `${i * 0.05}s`;
 
     div.innerHTML = `
       <b>${s.username}</b>
       <small>Role: ${s.role}</small>
       <small>${new Date(s.createdAt).toLocaleString()}</small>
-      <button onclick="deleteStaff('${s.username}')">Delete</button>
+      <button onclick="deleteStaff('${s.username}')">
+        Delete
+      </button>
     `;
 
     container.appendChild(div);
@@ -284,9 +299,10 @@ function renderLogs() {
     return;
   }
 
-  ALL_LOGS.forEach(log => {
+  ALL_LOGS.forEach((log, i) => {
     const div = document.createElement("div");
     div.className = "card";
+    div.style.animationDelay = `${i * 0.04}s`;
 
     div.innerHTML = `
       <b>${log.action}</b>
