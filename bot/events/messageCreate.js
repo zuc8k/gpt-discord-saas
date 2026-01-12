@@ -2,6 +2,7 @@ const Guild = require("../../api/models/Guild");
 const plans = require("../../shared/plans");
 const { countLines } = require("../../shared/utils");
 const { shouldReset } = require("../../shared/resetLimits");
+const { shouldResetDaily } = require("../../shared/resetDaily");
 
 const { askGPT } = require("../services/openai");
 const { sendLog } = require("../services/logger");
@@ -31,11 +32,17 @@ module.exports = async (client, message) => {
       guild = new Guild({
         guildId: message.guild.id,
         plan: "FREE",
+
+        dailyLimit: plans.FREE.dailyLines,
+        usedDailyLines: 0,
+        lastDailyReset: new Date(),
+
         monthlyLimit: plans.FREE.monthlyLines,
         yearlyLimit: plans.FREE.yearlyLines,
         usedLines: 0,
+
         commandUsage: {},
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        expiresAt: Date.now() + plans.FREE.days * 24 * 60 * 60 * 1000,
         lastReset: new Date()
       });
 
@@ -44,7 +51,8 @@ module.exports = async (client, message) => {
       replied = true;
       return message.reply(
         "🎉 تم تفعيل النسخة التجريبية **FREE** لمدة 7 أيام\n" +
-        "📊 Limit: 10,000 سطر\n" +
+        "📆 Daily Limit: 500 سطر\n" +
+        "📊 Monthly Limit: 10,000 سطر\n" +
         "🔗 SERVER SUPPORT"
       );
     }
@@ -69,15 +77,22 @@ module.exports = async (client, message) => {
     // ================== AUTO RESET MONTHLY ==================
     if (shouldReset(guild.lastReset)) {
       guild.usedLines = 0;
-      guild.commandUsage = {}; // 🔥 مهم جدًا
+      guild.commandUsage = {};
       guild.lastReset = new Date();
-      await guild.save();
 
       await sendLog(client, guild, {
         title: "♻️ Monthly Reset",
         description: "تم تصفير الاستهلاك الشهري (السطور + الأوامر)"
       });
     }
+
+    // ================== AUTO RESET DAILY ==================
+    if (shouldResetDaily(guild.lastDailyReset)) {
+      guild.usedDailyLines = 0;
+      guild.lastDailyReset = new Date();
+    }
+
+    await guild.save();
 
     // ================== EXPIRED ==================
     if (guild.expiresAt && Date.now() > guild.expiresAt) {
@@ -102,9 +117,16 @@ module.exports = async (client, message) => {
       return message.reply("⚠️ الرسالة طويلة جدًا");
     }
 
+    // 🔒 DAILY LIMIT
+    if (guild.usedDailyLines + userLines > guild.dailyLimit) {
+      replied = true;
+      return message.reply("⚠️ وصلت للحد اليومي المسموح");
+    }
+
+    // 🔒 MONTHLY LIMIT
     if (guild.usedLines + userLines > guild.monthlyLimit) {
       await sendLog(client, guild, {
-        title: "⚠️ Limit Reached",
+        title: "⚠️ Monthly Limit Reached",
         color: "Yellow",
         description:
           `User: ${message.author.tag}\n` +
@@ -112,7 +134,7 @@ module.exports = async (client, message) => {
       });
 
       replied = true;
-      return message.reply("⚠️ وصلت للحد الأقصى للباقة");
+      return message.reply("⚠️ وصلت للحد الشهري للباقة");
     }
 
     // ================== GPT RESPONSE ==================
@@ -120,8 +142,10 @@ module.exports = async (client, message) => {
 
     const reply = await askGPT(message.content);
     const botLines = countLines(reply);
+    const totalLines = userLines + botLines;
 
-    guild.usedLines += userLines + botLines;
+    guild.usedLines += totalLines;
+    guild.usedDailyLines += totalLines;
     await guild.save();
 
     await sendLog(client, guild, {
@@ -129,8 +153,9 @@ module.exports = async (client, message) => {
       color: "Green",
       description:
         `User: ${message.author.tag}\n` +
-        `Lines Used: ${userLines + botLines}\n` +
-        `Total: ${guild.usedLines}/${guild.monthlyLimit}`
+        `Lines Used: ${totalLines}\n` +
+        `Daily: ${guild.usedDailyLines}/${guild.dailyLimit}\n` +
+        `Monthly: ${guild.usedLines}/${guild.monthlyLimit}`
     });
 
     await typingPromise;
