@@ -1,15 +1,16 @@
-const API_URL = "http://localhost:3001"; // عدّل لو السيرفر مختلف
+const API_URL = "http://localhost:3001";
 
 let STAFF_TOKEN = localStorage.getItem("STAFF_TOKEN");
 let STAFF_ROLE = null;
 let STAFF_USERNAME = null;
 
-// ================== AUTO LOGIN ==================
+/* ================== AUTO LOGIN ================== */
 document.addEventListener("DOMContentLoaded", () => {
+  highlightMenu();
   if (STAFF_TOKEN) login(true);
 });
 
-// ================== CORE LOGIN ==================
+/* ================== LOGIN ================== */
 async function login(silent = false, requireRole = null) {
   const tokenInput = document.getElementById("token");
   const token = STAFF_TOKEN || tokenInput?.value;
@@ -42,11 +43,7 @@ async function login(silent = false, requireRole = null) {
   STAFF_USERNAME = data.username;
   localStorage.setItem("STAFF_TOKEN", token);
 
-  const info = document.getElementById("info");
-  if (info) {
-    info.innerHTML =
-      `👤 <b>${STAFF_USERNAME}</b> | 🔑 Role: <b>${STAFF_ROLE}</b>`;
-  }
+  fillProfile();
 
   if (document.getElementById("guilds")) loadGuilds();
   if (document.getElementById("staffList")) loadStaff();
@@ -54,19 +51,42 @@ async function login(silent = false, requireRole = null) {
   return true;
 }
 
-// ================== LOGOUT ==================
+/* ================== PROFILE UI ================== */
+function fillProfile() {
+  const nameEl = document.getElementById("profileName");
+  const roleEl = document.getElementById("profileRole");
+  const avatarEl = document.getElementById("profileAvatar");
+
+  if (nameEl) nameEl.textContent = STAFF_USERNAME;
+  if (roleEl) roleEl.textContent = STAFF_ROLE;
+
+  if (avatarEl) {
+    avatarEl.textContent = STAFF_USERNAME?.charAt(0).toUpperCase() || "👤";
+  }
+}
+
+/* ================== MENU ACTIVE ================== */
+function highlightMenu() {
+  const path = location.pathname;
+
+  if (path.includes("index")) setActive("nav-dashboard");
+  else if (path.includes("staff")) setActive("nav-staff");
+  else if (path.includes("logs")) setActive("nav-logs");
+}
+
+function setActive(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add("active");
+}
+
+/* ================== LOGOUT ================== */
 function logout() {
   localStorage.removeItem("STAFF_TOKEN");
-  STAFF_TOKEN = null;
-  STAFF_ROLE = null;
-  STAFF_USERNAME = null;
   location.reload();
 }
 
-// ================== LOAD GUILDS ==================
+/* ================== LOAD GUILDS ================== */
 async function loadGuilds() {
-  if (!STAFF_TOKEN) return;
-
   const res = await fetch(`${API_URL}/admin/guilds`, {
     headers: { Authorization: STAFF_TOKEN }
   });
@@ -88,10 +108,10 @@ async function loadGuilds() {
     if (["OWNER", "ADMIN"].includes(STAFF_ROLE)) {
       actions += `
         <select id="plan-${g.guildId}">
-          <option value="FREE">FREE</option>
-          <option value="PRIME">PRIME</option>
-          <option value="PREMIUM">PREMIUM</option>
-          <option value="MAX">MAX</option>
+          <option>FREE</option>
+          <option>PRIME</option>
+          <option>PREMIUM</option>
+          <option>MAX</option>
         </select>
 
         <select id="duration-${g.guildId}">
@@ -99,24 +119,22 @@ async function loadGuilds() {
           <option value="yearly">Yearly</option>
         </select>
 
-        <button id="btn-plan-${g.guildId}"
-          onclick="updatePlan('${g.guildId}')">Update Plan</button>
+        <button onclick="updatePlan('${g.guildId}')">Update Plan</button>
       `;
     }
 
     if (["OWNER", "ADMIN", "SUPPORT"].includes(STAFF_ROLE)) {
       actions += `
-        <button id="btn-reset-${g.guildId}"
-          onclick="resetUsage('${g.guildId}')">Reset Usage</button>
+        <button onclick="resetUsage('${g.guildId}')">Reset Usage</button>
       `;
     }
 
     div.innerHTML = `
-      <b>Guild ID:</b> ${g.guildId}<br>
-      <small>Plan: <b>${g.plan}</b></small><br>
-      <small>Daily: ${g.usedDailyLines}/${g.dailyLimit}</small><br>
-      <small>Monthly: ${g.usedLines}/${g.monthlyLimit}</small><br><br>
-      ${actions}
+      <b>Guild ID:</b> ${g.guildId}
+      <small>Plan: <b>${g.plan}</b></small>
+      <small>Daily: ${g.usedDailyLines}/${g.dailyLimit}</small>
+      <small>Monthly: ${g.usedLines}/${g.monthlyLimit}</small>
+      <br>${actions}
     `;
 
     container.appendChild(div);
@@ -126,14 +144,10 @@ async function loadGuilds() {
   });
 }
 
-// ================== UPDATE PLAN ==================
+/* ================== UPDATE PLAN ================== */
 async function updatePlan(guildId) {
-  const plan = document.getElementById(`plan-${guildId}`)?.value;
-  const duration = document.getElementById(`duration-${guildId}`)?.value;
-  const btn = document.getElementById(`btn-plan-${guildId}`);
-
-  if (!plan || !duration) return;
-  btn.disabled = true;
+  const plan = document.getElementById(`plan-${guildId}`).value;
+  const duration = document.getElementById(`duration-${guildId}`).value;
 
   const res = await fetch(`${API_URL}/admin/guild/${guildId}/plan`, {
     method: "POST",
@@ -144,32 +158,27 @@ async function updatePlan(guildId) {
     body: JSON.stringify({ plan, duration })
   });
 
-  btn.disabled = false;
-  if (!res.ok) return alert("❌ Failed to update plan");
+  if (!res.ok) return alert("❌ Failed");
 
   alert("✅ Plan Updated");
   loadGuilds();
 }
 
-// ================== RESET USAGE ==================
+/* ================== RESET ================== */
 async function resetUsage(guildId) {
-  const btn = document.getElementById(`btn-reset-${guildId}`);
-  btn.disabled = true;
-
   const res = await fetch(`${API_URL}/staff/reset/${guildId}`, {
     method: "POST",
     headers: { Authorization: STAFF_TOKEN }
   });
 
-  btn.disabled = false;
-  if (!res.ok) return alert("❌ Reset failed");
+  if (!res.ok) return alert("❌ Failed");
 
-  alert("♻️ Usage Reset");
+  alert("♻️ Reset Done");
   loadGuilds();
 }
 
-// ================== STAFF MANAGEMENT ==================
-async function loginStaff() {
+/* ================== STAFF ================== */
+function loginStaff() {
   login(false, "OWNER");
 }
 
@@ -189,47 +198,12 @@ async function loadStaff() {
     div.className = "card";
 
     div.innerHTML = `
-      <b>${s.username}</b><br>
-      <small>Role: ${s.role}</small><br>
-      <small>Created: ${new Date(s.createdAt).toLocaleString()}</small><br>
+      <b>${s.username}</b>
+      <small>Role: ${s.role}</small>
+      <small>${new Date(s.createdAt).toLocaleString()}</small>
       <button onclick="deleteStaff('${s.username}')">Delete</button>
     `;
 
     container.appendChild(div);
   });
-}
-
-async function createStaff() {
-  const username = document.getElementById("username")?.value;
-  const role = document.getElementById("role")?.value;
-  if (!username) return alert("Enter username");
-
-  const res = await fetch(`${API_URL}/staff/create`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: STAFF_TOKEN
-    },
-    body: JSON.stringify({ username, role })
-  });
-
-  if (!res.ok) return alert("❌ Failed to create staff");
-
-  const data = await res.json();
-  alert(
-    `✅ Staff Created\n\nUsername: ${data.staff.username}\nRole: ${data.staff.role}\nToken:\n${data.staff.token}`
-  );
-
-  loadStaff();
-}
-
-async function deleteStaff(username) {
-  if (!confirm(`Delete ${username}?`)) return;
-
-  await fetch(`${API_URL}/staff/delete/${username}`, {
-    method: "DELETE",
-    headers: { Authorization: STAFF_TOKEN }
-  });
-
-  loadStaff();
 }
