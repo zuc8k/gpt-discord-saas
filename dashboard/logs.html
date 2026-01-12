@@ -7,18 +7,63 @@
 </head>
 <body>
 
-  <!-- ⭐ STAR BACKGROUND -->
+  <!-- ⭐ Stars Background -->
   <canvas id="stars"></canvas>
 
-  <h1>🧾 Audit Logs</h1>
+  <div class="layout">
 
-  <div class="login">
-    <input type="password" id="token" placeholder="STAFF TOKEN">
-    <button onclick="loginLogs()">Login</button>
+    <!-- ================== SIDEBAR ================== -->
+    <aside class="sidebar">
+
+      <!-- LOGO -->
+      <div class="logo">
+        🤖 GPT Bot
+      </div>
+
+      <!-- MENU -->
+      <nav class="menu">
+        <a href="index.html" id="nav-dashboard">🏠 Dashboard</a>
+        <a href="staff.html" id="nav-staff">👥 Staff</a>
+        <a href="logs.html" id="nav-logs" class="active">🧾 Logs</a>
+      </nav>
+
+      <!-- USER PROFILE (BOTTOM) -->
+      <div class="profile">
+        <div class="avatar" id="profileAvatar">👤</div>
+        <div class="info">
+          <span id="profileName">Guest</span>
+          <small id="profileRole">---</small>
+        </div>
+      </div>
+
+      <!-- LOGOUT -->
+      <button
+        style="margin-top: 12px; width: 100%;"
+        onclick="logout()">
+        Logout
+      </button>
+
+    </aside>
+
+    <!-- ================== CONTENT ================== -->
+    <main class="content">
+
+      <h1>🧾 Audit Logs</h1>
+
+      <!-- LOGIN -->
+      <div class="login">
+        <input type="password" id="token" placeholder="STAFF TOKEN">
+        <button onclick="login()">Login</button>
+      </div>
+
+      <div id="info"></div>
+
+      <!-- LOGS -->
+      <div id="logs"></div>
+
+    </main>
+
   </div>
-
-  <div id="info"></div>
-  <div id="logs"></div>
 
   <!-- Scripts -->
   <script src="stars.js"></script>
