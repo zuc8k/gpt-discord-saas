@@ -15,7 +15,27 @@ const guildSchema = new mongoose.Schema({
     default: "FREE"
   },
 
-  expiresAt: Date,
+  expiresAt: {
+    type: Date,
+    default: null
+  },
+
+  expiredNotified: {
+    type: Boolean,
+    default: false // علشان مايبعتش رسالة انتهاء كل شوية
+  },
+
+  // ================== BOT CONTROL ==================
+  chatEnabled: {
+    type: Boolean,
+    default: true // قفل / فتح الشات من الداشبورد
+  },
+
+  botMood: {
+    type: String,
+    enum: ["FUN", "FORMAL"],
+    default: "FUN" // هزار افتراضي
+  },
 
   // ================== MONTHLY / YEARLY LIMITS ==================
   monthlyLimit: {
