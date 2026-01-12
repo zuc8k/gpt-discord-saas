@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, PermissionsBitField } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const Guild = require("../../api/models/Guild");
 const { sendLog } = require("../services/logger");
+const PERMS = require("../../shared/permissions");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,18 +13,13 @@ module.exports = {
         .setRequired(true)
     ),
 
-  async execute(interaction) {
-    // صلاحيات
-    if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      return interaction.reply({
-        content: "❌ لازم تكون Admin",
-        ephemeral: true
-      });
-    }
+  // 🔐 الصلاحيات (Admin فقط)
+  permission: PERMS.ADMIN,
 
+  async execute(interaction) {
     const channel = interaction.options.getChannel("channel");
 
-    // تحديث أو إنشاء السيرفر
+    // إنشاء / تحديث السيرفر
     const guild = await Guild.findOneAndUpdate(
       { guildId: interaction.guild.id },
       {
@@ -33,7 +29,7 @@ module.exports = {
       { upsert: true, new: true }
     );
 
-    // رد
+    // رد للمستخدم
     await interaction.reply(`✅ تم تحديد قناة GPT بنجاح: ${channel}`);
 
     // Log
