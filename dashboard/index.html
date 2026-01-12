@@ -2,18 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GPT Bot Admin Dashboard</title>
+  <title>GPT Bot – Staff Dashboard</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <h1>🤖 GPT Bot – Admin Dashboard</h1>
+  <h1>🤖 GPT Bot – Staff Dashboard</h1>
 
+  <!-- LOGIN -->
   <div class="login">
-    <input type="password" id="token" placeholder="ADMIN TOKEN">
-    <button onclick="loadGuilds()">Login</button>
+    <input type="password" id="token" placeholder="STAFF TOKEN">
+    <button onclick="login()">Login</button>
   </div>
 
+  <!-- STAFF INFO -->
+  <div id="info" style="margin: 10px 0;"></div>
+
+  <!-- GUILDS -->
   <div id="guilds"></div>
 
   <script src="script.js"></script>
