@@ -2,6 +2,7 @@
   box-sizing: border-box;
 }
 
+/* ================== BASE ================== */
 body {
   font-family: "Segoe UI", Tahoma, Arial, sans-serif;
   background: linear-gradient(135deg, #0f172a, #020617);
@@ -17,11 +18,17 @@ h1 {
   color: #38bdf8;
 }
 
+h3 {
+  margin-top: 24px;
+  color: #38bdf8;
+}
+
 /* ================== LOGIN ================== */
 .login {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
+  align-items: center;
 }
 
 #info {
@@ -33,16 +40,23 @@ h1 {
 /* ================== FORM ================== */
 input,
 select {
-  padding: 8px 10px;
+  padding: 9px 12px;
   border-radius: 6px;
-  border: none;
+  border: 1px solid #1e293b;
   background: #020617;
   color: #e5e7eb;
   outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
 }
 
 input::placeholder {
   color: #64748b;
+}
+
+input:focus,
+select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
 }
 
 select {
@@ -58,11 +72,15 @@ button {
   background: #2563eb;
   color: #fff;
   font-size: 13px;
-  transition: 0.2s;
+  transition: background 0.2s, transform 0.05s, opacity 0.2s;
 }
 
 button:hover {
   background: #1d4ed8;
+}
+
+button:active {
+  transform: scale(0.97);
 }
 
 button:disabled {
@@ -70,13 +88,41 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* ================== ACTION BUTTON COLORS ================== */
+button[onclick*="updatePlan"] {
+  background: #16a34a;
+}
+button[onclick*="updatePlan"]:hover {
+  background: #15803d;
+}
+
+button[onclick*="resetUsage"] {
+  background: #dc2626;
+}
+button[onclick*="resetUsage"]:hover {
+  background: #b91c1c;
+}
+
+button[onclick*="deleteStaff"] {
+  background: #7c2d12;
+}
+button[onclick*="deleteStaff"]:hover {
+  background: #9a3412;
+}
+
 /* ================== CARDS ================== */
 .card {
   background: #020617;
-  padding: 15px;
-  margin-bottom: 12px;
-  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 14px;
+  border-radius: 10px;
   border: 1px solid #1e293b;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
 }
 
 .card b {
@@ -86,36 +132,58 @@ button:disabled {
 .card small {
   display: block;
   opacity: 0.85;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-/* ================== ACTION BUTTON COLORS ================== */
-button[onclick*="resetUsage"] {
-  background: #dc2626;
+/* ================== ROLE BADGES (اختياري) ================== */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  margin-left: 6px;
 }
 
-button[onclick*="resetUsage"]:hover {
-  background: #b91c1c;
+.badge.owner {
+  background: #7c3aed;
 }
-
-button[onclick*="updatePlan"] {
+.badge.admin {
+  background: #2563eb;
+}
+.badge.support {
   background: #16a34a;
 }
 
-button[onclick*="updatePlan"]:hover {
-  background: #15803d;
+/* ================== TOAST (جاهز لو حبيت تضيفه) ================== */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #020617;
+  border: 1px solid #1e293b;
+  color: #e5e7eb;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.3s ease;
 }
 
-/* ================== STAFF PAGE ================== */
-h3 {
-  margin-top: 20px;
-  color: #38bdf8;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ================== RESPONSIVE ================== */
 @media (max-width: 600px) {
   .login {
     flex-direction: column;
+    align-items: stretch;
   }
 
   button,
