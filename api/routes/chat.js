@@ -5,6 +5,7 @@ const ChatMessage = require("../models/ChatMessage");
 const { countLines } = require("../shared/utils");
 const { shouldResetDaily } = require("../shared/resetDaily");
 const { isBlocked } = require("../services/contentFilter");
+const { askGPT } = require("../services/openai"); // 🔥 GPT الحقيقي
 
 /*
   POST /chat/send
@@ -23,19 +24,19 @@ router.post("/send", async (req, res) => {
       return res.status(400).json({ error: "Missing data" });
     }
 
-    // ================== GET GUILD ==================
+    /* ================== GET GUILD ================== */
     const guild = await Guild.findOne({ guildId });
     if (!guild) {
       return res.status(404).json({ error: "Guild not found" });
     }
 
-    // ================== RESET DAILY ==================
+    /* ================== RESET DAILY ================== */
     if (shouldResetDaily(guild.lastDailyReset)) {
       guild.usedDailyLines = 0;
       guild.lastDailyReset = new Date();
     }
 
-    // ================== EXPIRED ==================
+    /* ================== EXPIRED ================== */
     if (guild.expiresAt && Date.now() > guild.expiresAt) {
       return res.status(403).json({
         code: "EXPIRED",
@@ -43,7 +44,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    // ================== CONTENT FILTER ==================
+    /* ================== CONTENT FILTER ================== */
     if (isBlocked(message)) {
       return res.status(403).json({
         code: "BLOCKED",
@@ -51,7 +52,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    // ================== COUNT USER LINES ==================
+    /* ================== COUNT USER LINES ================== */
     const userLines = countLines(message);
 
     if (userLines > 500) {
@@ -61,7 +62,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    // ================== DAILY LIMIT ==================
+    /* ================== DAILY LIMIT (USER) ================== */
     if (guild.usedDailyLines + userLines > guild.dailyLimit) {
       return res.status(403).json({
         code: "DAILY_LIMIT",
@@ -73,7 +74,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    // ================== MONTHLY LIMIT ==================
+    /* ================== MONTHLY LIMIT (USER) ================== */
     if (guild.usedLines + userLines > guild.monthlyLimit) {
       return res.status(403).json({
         code: "MONTHLY_LIMIT",
@@ -85,7 +86,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    // ================== SAVE USER MESSAGE ==================
+    /* ================== SAVE USER MESSAGE ================== */
     await ChatMessage.create({
       guildId,
       role: "user",
@@ -93,14 +94,34 @@ router.post("/send", async (req, res) => {
       plan: guild.plan
     });
 
-    // ================== GPT PLACEHOLDER ==================
-    // 🔥 هنا بعدين تربط OpenAI / Groq / Local LLM
-    const replyText = `🤖 GPT says:\n"${message}"`;
+    /* ================== LOAD CONTEXT (LAST 10) ================== */
+    const history = await ChatMessage.find({ guildId })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+
+    const messagesForGPT = history
+      .reverse()
+      .map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+    messagesForGPT.push({
+      role: "user",
+      content: message
+    });
+
+    /* ================== GPT REAL ================== */
+    const replyText = await askGPT({
+      messages: messagesForGPT,
+      plan: guild.plan
+    });
 
     const botLines = countLines(replyText);
     const totalLines = userLines + botLines;
 
-    // ================== CHECK BOT USAGE ==================
+    /* ================== DAILY LIMIT (AFTER BOT) ================== */
     if (guild.usedDailyLines + totalLines > guild.dailyLimit) {
       return res.status(403).json({
         code: "DAILY_LIMIT",
@@ -108,7 +129,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    // ================== SAVE BOT MESSAGE ==================
+    /* ================== SAVE BOT MESSAGE ================== */
     await ChatMessage.create({
       guildId,
       role: "assistant",
@@ -116,12 +137,12 @@ router.post("/send", async (req, res) => {
       plan: guild.plan
     });
 
-    // ================== UPDATE USAGE ==================
+    /* ================== UPDATE USAGE ================== */
     guild.usedDailyLines += totalLines;
     guild.usedLines += totalLines;
     await guild.save();
 
-    // ================== RESPONSE ==================
+    /* ================== RESPONSE ================== */
     res.json({
       reply: replyText,
       plan: guild.plan,
