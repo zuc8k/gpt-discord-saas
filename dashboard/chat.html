@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>GPT Chat</title>
+
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="chat.css">
 </head>
@@ -51,16 +52,33 @@
     <!-- ================== CHAT ================== -->
     <main class="content chat-page">
 
+      <!-- الرسائل -->
       <div class="chat-container" id="chatContainer">
-        <!-- messages هنا -->
+        <!-- messages -->
       </div>
 
-      <!-- INPUT -->
+      <!-- ================== INPUT ================== -->
       <div class="chat-input">
+
+        <!-- 📷 زر رفع صورة -->
+        <label for="imageInput" class="image-btn" title="Upload image">
+          📷
+        </label>
+
+        <input
+          type="file"
+          id="imageInput"
+          accept="image/*"
+          hidden
+        />
+
+        <!-- ✍️ كتابة الرسالة -->
         <textarea
           id="chatInput"
           placeholder="Send a message..."
           rows="1"></textarea>
+
+        <!-- ➤ إرسال -->
         <button id="sendBtn">➤</button>
       </div>
 
@@ -68,8 +86,10 @@
 
   </div>
 
+  <!-- Scripts -->
   <script src="stars.js"></script>
   <script src="script.js"></script>
   <script src="chat.js"></script>
+
 </body>
 </html>
