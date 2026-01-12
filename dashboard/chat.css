@@ -1,0 +1,89 @@
+/* ================== CHAT ================== */
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+}
+
+.chat-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* MESSAGE */
+.message {
+  max-width: 75%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  line-height: 1.5;
+  animation: msgIn .25s ease;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+}
+
+.message.assistant {
+  align-self: flex-start;
+  background: rgba(2,6,23,.75);
+  border: 1px solid rgba(56,189,248,.15);
+  backdrop-filter: blur(10px);
+}
+
+/* INPUT */
+.chat-input {
+  display: flex;
+  gap: 10px;
+  padding: 16px;
+  border-top: 1px solid rgba(56,189,248,.15);
+  background: rgba(2,6,23,.85);
+  backdrop-filter: blur(12px);
+}
+
+.chat-input textarea {
+  flex: 1;
+  resize: none;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(56,189,248,.2);
+  background: rgba(2,6,23,.7);
+  color: #fff;
+  outline: none;
+}
+
+.chat-input button {
+  padding: 0 18px;
+  font-size: 18px;
+}
+
+/* TYPING */
+.typing {
+  display: flex;
+  gap: 4px;
+}
+.typing span {
+  width: 6px;
+  height: 6px;
+  background: #94a3b8;
+  border-radius: 50%;
+  animation: blink 1.4s infinite both;
+}
+.typing span:nth-child(2) { animation-delay: .2s; }
+.typing span:nth-child(3) { animation-delay: .4s; }
+
+@keyframes blink {
+  0% { opacity: .2; }
+  20% { opacity: 1; }
+  100% { opacity: .2; }
+}
+
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
