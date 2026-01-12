@@ -1,5 +1,7 @@
 const Guild = require("../../api/models/Guild");
+const ChatMessage = require("../../api/models/ChatMessage");
 const plans = require("../../shared/plans");
+
 const { countLines } = require("../../shared/utils");
 const { shouldReset } = require("../../shared/resetLimits");
 const { shouldResetDaily } = require("../../shared/resetDaily");
@@ -13,21 +15,20 @@ module.exports = async (client, message) => {
   let replied = false;
 
   try {
-    if (!message || !message.guild) return;
+    if (!message?.guild) return;
     if (message.author?.bot) return;
+    if (!message.content?.trim()) return;
 
-    // ================== EMPTY MESSAGE ==================
-    if (!message.content || !message.content.trim()) return;
-
-    // ================== ANTI SPAM ==================
+    /* ================== ANTI SPAM ================== */
     if (checkSpam(message.author.id)) {
       replied = true;
       return message.reply("⏳ استنى شوية قبل ما تبعت تاني");
     }
 
+    /* ================== LOAD GUILD ================== */
     let guild = await Guild.findOne({ guildId: message.guild.id });
 
-    // ================== FIRST TIME (FREE TRIAL) ==================
+    /* ================== FIRST TIME (FREE TRIAL) ================== */
     if (!guild) {
       guild = new Guild({
         guildId: message.guild.id,
@@ -38,11 +39,7 @@ module.exports = async (client, message) => {
         lastDailyReset: new Date(),
 
         monthlyLimit: plans.FREE.monthlyLines,
-        yearlyLimit: plans.FREE.yearlyLines,
         usedLines: 0,
-
-        commandUsage: {},
-        dailyCommandUsage: {},
 
         expiresAt: Date.now() + plans.FREE.days * 24 * 60 * 60 * 1000,
         lastReset: new Date()
@@ -53,135 +50,110 @@ module.exports = async (client, message) => {
       replied = true;
       return message.reply(
         "🎉 تم تفعيل النسخة التجريبية **FREE** لمدة 7 أيام\n" +
-        "📆 Daily Limit: 500 سطر\n" +
-        "📊 Monthly Limit: 10,000 سطر\n" +
-        "🔗 SERVER SUPPORT"
+        "📆 Daily: 500 سطر\n" +
+        "📊 Monthly: 10,000 سطر"
       );
     }
 
-    // ================== SAFE DEFAULTS (OLD DATA) ==================
-    const planData = plans[guild.plan] || plans.FREE;
-
-    if (!guild.dailyLimit) guild.dailyLimit = planData.dailyLines;
-    if (!guild.monthlyLimit) guild.monthlyLimit = planData.monthlyLines;
-    if (!guild.usedDailyLines) guild.usedDailyLines = 0;
-    if (!guild.lastDailyReset) guild.lastDailyReset = new Date();
-    if (!guild.commandUsage) guild.commandUsage = {};
-    if (!guild.dailyCommandUsage) guild.dailyCommandUsage = {};
-
-    // ================== GPT CHANNEL CHECK ==================
+    /* ================== GPT CHANNEL CHECK ================== */
     if (guild.gptChannel && message.channel.id !== guild.gptChannel) return;
 
-    // ================== CONTENT FILTER ==================
-    if (isBlocked(message.content)) {
-      await sendLog(client, guild, {
-        title: "🚫 Blocked Content",
-        color: "Red",
-        description:
-          `User: ${message.author.tag}\n` +
-          `Message: ${message.content.slice(0, 200)}`
-      });
-
-      replied = true;
-      return message.reply("🚫 الطلب غير مسموح");
-    }
-
-    // ================== AUTO RESET MONTHLY ==================
+    /* ================== RESET MONTHLY ================== */
     if (shouldReset(guild.lastReset)) {
       guild.usedLines = 0;
-      guild.commandUsage = {};
-      guild.dailyCommandUsage = {}; // 🔥 مهم
       guild.lastReset = new Date();
-
-      await sendLog(client, guild, {
-        title: "♻️ Monthly Reset",
-        description: "تم تصفير الاستهلاك الشهري (GPT + الأوامر)"
-      });
     }
 
-    // ================== AUTO RESET DAILY ==================
+    /* ================== RESET DAILY ================== */
     if (shouldResetDaily(guild.lastDailyReset)) {
       guild.usedDailyLines = 0;
-      guild.dailyCommandUsage = {};
       guild.lastDailyReset = new Date();
     }
 
     await guild.save();
 
-    // ================== EXPIRED ==================
+    /* ================== EXPIRED ================== */
     if (guild.expiresAt && Date.now() > guild.expiresAt) {
-      await sendLog(client, guild, {
-        title: "❌ Subscription Expired",
-        color: "Red",
-        description: `User: ${message.author.tag}`
-      });
-
       replied = true;
-      return message.reply(
-        "❌ انتهت مدة الاستخدام\n" +
-        "🔗 SERVER SUPPORT"
-      );
+      return message.reply("❌ انتهت مدة الاشتراك");
     }
 
-    // ================== LIMIT CHECK ==================
+    /* ================== FILTER ================== */
+    if (isBlocked(message.content)) {
+      replied = true;
+      return message.reply("🚫 الطلب غير مسموح");
+    }
+
+    /* ================== LIMIT CHECK ================== */
     const userLines = countLines(message.content);
 
-    if (userLines > 500) {
-      replied = true;
-      return message.reply("⚠️ الرسالة طويلة جدًا");
-    }
-
-    // 🔒 DAILY LIMIT
     if (guild.usedDailyLines + userLines > guild.dailyLimit) {
       replied = true;
-      return message.reply("⚠️ وصلت للحد اليومي المسموح");
+      return message.reply("⚠️ وصلت للحد اليومي");
     }
 
-    // 🔒 MONTHLY LIMIT
     if (guild.usedLines + userLines > guild.monthlyLimit) {
-      await sendLog(client, guild, {
-        title: "⚠️ Monthly Limit Reached",
-        color: "Yellow",
-        description:
-          `User: ${message.author.tag}\n` +
-          `Used: ${guild.usedLines}/${guild.monthlyLimit}`
-      });
-
       replied = true;
-      return message.reply("⚠️ وصلت للحد الشهري للباقة");
+      return message.reply("⚠️ وصلت للحد الشهري");
     }
 
-    // ================== GPT RESPONSE ==================
-    const typingPromise = message.channel.sendTyping();
+    /* ================== LOAD CONTEXT (LAST 10) ================== */
+    const history = await ChatMessage.find({ guildId: guild.guildId })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
 
-    const reply = await askGPT(message.content);
+    const messagesForGPT = history
+      .reverse()
+      .map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+    messagesForGPT.push({
+      role: "user",
+      content: message.content
+    });
+
+    /* ================== SAVE USER ================== */
+    await ChatMessage.create({
+      guildId: guild.guildId,
+      role: "user",
+      content: message.content,
+      plan: guild.plan
+    });
+
+    /* ================== GPT ================== */
+    await message.channel.sendTyping();
+
+    const reply = await askGPT({
+      messages: messagesForGPT,
+      plan: guild.plan
+    });
+
     const botLines = countLines(reply);
     const totalLines = userLines + botLines;
 
-    guild.usedLines += totalLines;
     guild.usedDailyLines += totalLines;
+    guild.usedLines += totalLines;
     await guild.save();
 
-    await sendLog(client, guild, {
-      title: "💬 GPT Request",
-      color: "Green",
-      description:
-        `User: ${message.author.tag}\n` +
-        `Lines Used: ${totalLines}\n` +
-        `Daily: ${guild.usedDailyLines}/${guild.dailyLimit}\n` +
-        `Monthly: ${guild.usedLines}/${guild.monthlyLimit}`
+    /* ================== SAVE BOT ================== */
+    await ChatMessage.create({
+      guildId: guild.guildId,
+      role: "assistant",
+      content: reply,
+      plan: guild.plan
     });
 
-    await typingPromise;
     replied = true;
     await message.reply(reply);
 
   } catch (err) {
     console.error("❌ messageCreate error:", err);
-
     if (!replied) {
       try {
-        await message.reply("❌ حصل خطأ مؤقت، حاول لاحقًا");
+        await message.reply("❌ حصل خطأ مؤقت");
       } catch {}
     }
   }
