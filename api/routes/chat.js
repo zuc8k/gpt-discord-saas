@@ -5,7 +5,7 @@ const ChatMessage = require("../models/ChatMessage");
 const { countLines } = require("../shared/utils");
 const { shouldResetDaily } = require("../shared/resetDaily");
 const { isBlocked } = require("../services/contentFilter");
-const { askGPT } = require("../services/openai"); // 🔥 GPT الحقيقي
+const { askGPT } = require("../services/openai");
 
 /*
   POST /chat/send
@@ -15,7 +15,6 @@ const { askGPT } = require("../services/openai"); // 🔥 GPT الحقيقي
     message: "Hello GPT"
   }
 */
-
 router.post("/send", async (req, res) => {
   try {
     const { guildId, message } = req.body;
@@ -34,6 +33,7 @@ router.post("/send", async (req, res) => {
     if (shouldResetDaily(guild.lastDailyReset)) {
       guild.usedDailyLines = 0;
       guild.lastDailyReset = new Date();
+      await guild.save();
     }
 
     /* ================== EXPIRED ================== */
@@ -86,14 +86,6 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    /* ================== SAVE USER MESSAGE ================== */
-    await ChatMessage.create({
-      guildId,
-      role: "user",
-      content: message,
-      plan: guild.plan
-    });
-
     /* ================== LOAD CONTEXT (LAST 10) ================== */
     const history = await ChatMessage.find({ guildId })
       .sort({ createdAt: -1 })
@@ -107,9 +99,18 @@ router.post("/send", async (req, res) => {
         content: m.content
       }));
 
+    // أضف رسالة المستخدم الحالية
     messagesForGPT.push({
       role: "user",
       content: message
+    });
+
+    /* ================== SAVE USER MESSAGE ================== */
+    await ChatMessage.create({
+      guildId,
+      role: "user",
+      content: message,
+      plan: guild.plan
     });
 
     /* ================== GPT REAL ================== */
@@ -126,6 +127,14 @@ router.post("/send", async (req, res) => {
       return res.status(403).json({
         code: "DAILY_LIMIT",
         message: "Daily limit reached after response"
+      });
+    }
+
+    /* ================== MONTHLY LIMIT (AFTER BOT) ================== */
+    if (guild.usedLines + totalLines > guild.monthlyLimit) {
+      return res.status(403).json({
+        code: "MONTHLY_LIMIT",
+        message: "Monthly limit reached after response"
       });
     }
 
