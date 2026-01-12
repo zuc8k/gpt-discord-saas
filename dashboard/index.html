@@ -7,24 +7,53 @@
 </head>
 <body>
 
-  <!-- ⭐ STAR BACKGROUND -->
+  <!-- ⭐ Stars -->
   <canvas id="stars"></canvas>
 
-  <h1>🤖 GPT Bot – Staff Dashboard</h1>
+  <div class="layout">
 
-  <!-- LOGIN -->
-  <div class="login">
-    <input type="password" id="token" placeholder="STAFF TOKEN">
-    <button onclick="login()">Login</button>
+    <!-- ================== SIDEBAR ================== -->
+    <aside class="sidebar">
+
+      <div class="logo">
+        🤖 GPT Bot
+      </div>
+
+      <nav class="menu">
+        <a href="index.html" class="active">🏠 Dashboard</a>
+        <a href="staff.html">👥 Staff</a>
+        <a href="logs.html">🧾 Logs</a>
+      </nav>
+
+      <!-- USER PROFILE (BOTTOM) -->
+      <div class="profile">
+        <div class="avatar">👤</div>
+        <div class="info">
+          <span id="profileName">Guest</span>
+          <small id="profileRole">---</small>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ================== CONTENT ================== -->
+    <main class="content">
+
+      <h1>🤖 Staff Dashboard</h1>
+
+      <div class="login">
+        <input type="password" id="token" placeholder="STAFF TOKEN">
+        <button onclick="login()">Login</button>
+      </div>
+
+      <div id="info"></div>
+
+      <div id="guilds"></div>
+
+    </main>
+
   </div>
 
-  <!-- STAFF INFO -->
-  <div id="info" style="margin: 10px 0;"></div>
-
-  <!-- GUILDS -->
-  <div id="guilds"></div>
-
-  <!-- Scripts -->
   <script src="stars.js"></script>
   <script src="script.js"></script>
 </body>
