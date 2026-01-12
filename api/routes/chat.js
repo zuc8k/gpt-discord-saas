@@ -2,25 +2,51 @@ const router = require("express").Router();
 const Guild = require("../models/Guild");
 const ChatMessage = require("../models/ChatMessage");
 
+const multer = require("multer");
+const path = require("path");
+
 const { countLines } = require("../shared/utils");
 const { shouldResetDaily } = require("../shared/resetDaily");
 const { isBlocked } = require("../services/contentFilter");
 const { askGPT } = require("../services/openai");
 
+/* ================== MULTER CONFIG ================== */
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/chat");
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `chat-${Date.now()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      cb(new Error("Only images allowed"));
+    } else {
+      cb(null, true);
+    }
+  }
+});
+
 /*
   POST /chat/send
-  Body:
-  {
-    guildId: "123",
-    message: "Hello GPT"
-  }
+  FormData:
+    guildId
+    message (optional)
+    image (optional)
 */
-router.post("/send", async (req, res) => {
+router.post("/send", upload.single("image"), async (req, res) => {
   try {
-    const { guildId, message } = req.body;
+    const { guildId, message = "" } = req.body;
+    const imageFile = req.file;
 
     /* ================== VALIDATION ================== */
-    if (!guildId || !message?.trim()) {
+    if (!guildId || (!message.trim() && !imageFile)) {
       return res.status(400).json({ error: "Missing data" });
     }
 
@@ -45,8 +71,8 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    /* ================== CONTENT FILTER ================== */
-    if (isBlocked(message)) {
+    /* ================== CONTENT FILTER (TEXT ONLY) ================== */
+    if (message && isBlocked(message)) {
       return res.status(403).json({
         code: "BLOCKED",
         message: "Message not allowed"
@@ -54,7 +80,7 @@ router.post("/send", async (req, res) => {
     }
 
     /* ================== COUNT USER LINES ================== */
-    const userLines = countLines(message);
+    const userLines = message ? countLines(message) : 1;
 
     if (userLines > 500) {
       return res.status(400).json({
@@ -63,30 +89,36 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    /* ================== LIMIT CHECK (USER ONLY) ================== */
+    /* ================== LIMIT CHECK (USER) ================== */
     if (guild.usedDailyLines + userLines > guild.dailyLimit) {
       return res.status(403).json({
         code: "DAILY_LIMIT",
-        message: "Daily limit reached",
-        usage: {
-          used: guild.usedDailyLines,
-          limit: guild.dailyLimit
-        }
+        message: "Daily limit reached"
       });
     }
 
     if (guild.usedLines + userLines > guild.monthlyLimit) {
       return res.status(403).json({
         code: "MONTHLY_LIMIT",
-        message: "Monthly limit reached",
-        usage: {
-          used: guild.usedLines,
-          limit: guild.monthlyLimit
-        }
+        message: "Monthly limit reached"
       });
     }
 
-    /* ================== LOAD CONTEXT (LAST 10) ================== */
+    /* ================== IMAGE URL ================== */
+    const imageUrl = imageFile
+      ? `/uploads/chat/${imageFile.filename}`
+      : null;
+
+    /* ================== SAVE USER MESSAGE ================== */
+    await ChatMessage.create({
+      guildId,
+      role: "user",
+      content: message,
+      imageUrl,
+      plan: guild.plan
+    });
+
+    /* ================== LOAD CONTEXT ================== */
     const history = await ChatMessage.find({ guildId })
       .sort({ createdAt: -1 })
       .limit(10)
@@ -96,23 +128,15 @@ router.post("/send", async (req, res) => {
       .reverse()
       .map(m => ({
         role: m.role,
-        content: m.content
+        content: m.content || ""
       }));
 
     messagesForGPT.push({
       role: "user",
-      content: message
+      content: message || "Analyze the image"
     });
 
-    /* ================== SAVE USER MESSAGE ================== */
-    await ChatMessage.create({
-      guildId,
-      role: "user",
-      content: message,
-      plan: guild.plan
-    });
-
-    /* ================== GPT REAL ================== */
+    /* ================== GPT ================== */
     const replyText = await askGPT({
       messages: messagesForGPT,
       plan: guild.plan
@@ -153,6 +177,7 @@ router.post("/send", async (req, res) => {
     res.json({
       reply: replyText,
       plan: guild.plan,
+      image: imageUrl,
       usage: {
         daily: guild.usedDailyLines,
         dailyLimit: guild.dailyLimit,
