@@ -22,14 +22,14 @@
 
       <!-- MENU -->
       <nav class="menu">
-        <a href="index.html" id="nav-dashboard">🏠 Dashboard</a>
-        <a href="staff.html" id="nav-staff">👥 Staff</a>
-        <a href="logs.html" id="nav-logs" class="active">🧾 Logs</a>
+        <a href="index.html">🏠 Dashboard</a>
+        <a href="staff.html">👥 Staff</a>
+        <a href="logs.html" class="active">🧾 Logs</a>
       </nav>
 
-      <!-- USER PROFILE (BOTTOM) -->
+      <!-- USER PROFILE -->
       <div class="profile">
-        <div class="avatar" id="profileAvatar">👤</div>
+        <div class="avatar">👤</div>
         <div class="info">
           <span id="profileName">Guest</span>
           <small id="profileRole">---</small>
@@ -37,9 +37,7 @@
       </div>
 
       <!-- LOGOUT -->
-      <button
-        style="margin-top: 12px; width: 100%;"
-        onclick="logout()">
+      <button style="margin-top: 12px; width: 100%;" onclick="logout()">
         Logout
       </button>
 
@@ -53,12 +51,38 @@
       <!-- LOGIN -->
       <div class="login">
         <input type="password" id="token" placeholder="STAFF TOKEN">
-        <button onclick="login()">Login</button>
+        <button onclick="loginLogs()">Login</button>
       </div>
 
       <div id="info"></div>
 
-      <!-- LOGS -->
+      <!-- ================== FILTER BAR ================== -->
+      <div class="card">
+
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="🔍 Search (user / action / guild)"
+          oninput="renderLogs()"
+        >
+
+        <select id="actionFilter" onchange="renderLogs()">
+          <option value="">All Actions</option>
+          <option value="BILLING_UPGRADE">Billing Upgrade</option>
+          <option value="RESET">Reset</option>
+          <option value="LOGIN">Login</option>
+          <option value="STAFF_CREATE">Staff Create</option>
+          <option value="STAFF_DELETE">Staff Delete</option>
+        </select>
+
+        <select id="sortFilter" onchange="renderLogs()">
+          <option value="desc">Newest First</option>
+          <option value="asc">Oldest First</option>
+        </select>
+
+      </div>
+
+      <!-- ================== LOGS ================== -->
       <div id="logs"></div>
 
     </main>
