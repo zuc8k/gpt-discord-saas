@@ -29,7 +29,6 @@ mongoose.connect(process.env.MONGO_URI)
   });
 
 // ================== STATIC FILES ==================
-// رفع صور Vodafone Cash
 app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"))
@@ -40,6 +39,9 @@ app.use(
 // Public / User
 app.use("/api/guild", require("./routes/guild"));
 app.use("/api/auth", require("./routes/auth"));
+
+// 🔥 CHAT (GPT / AI)
+app.use("/chat", require("./routes/chat"));
 
 // Billing System (Stripe + Vodafone)
 app.use("/billing", require("./routes/billing"));
