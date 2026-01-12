@@ -34,6 +34,7 @@ module.exports = async (client, message) => {
         monthlyLimit: plans.FREE.monthlyLines,
         yearlyLimit: plans.FREE.yearlyLines,
         usedLines: 0,
+        commandUsage: {},
         expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
         lastReset: new Date()
       });
@@ -68,12 +69,13 @@ module.exports = async (client, message) => {
     // ================== AUTO RESET MONTHLY ==================
     if (shouldReset(guild.lastReset)) {
       guild.usedLines = 0;
+      guild.commandUsage = {}; // 🔥 مهم جدًا
       guild.lastReset = new Date();
       await guild.save();
 
       await sendLog(client, guild, {
         title: "♻️ Monthly Reset",
-        description: "تم تصفير الاستهلاك الشهري"
+        description: "تم تصفير الاستهلاك الشهري (السطور + الأوامر)"
       });
     }
 
@@ -114,7 +116,7 @@ module.exports = async (client, message) => {
     }
 
     // ================== GPT RESPONSE ==================
-    const typing = message.channel.sendTyping();
+    const typingPromise = message.channel.sendTyping();
 
     const reply = await askGPT(message.content);
     const botLines = countLines(reply);
@@ -131,7 +133,7 @@ module.exports = async (client, message) => {
         `Total: ${guild.usedLines}/${guild.monthlyLimit}`
     });
 
-    await typing;
+    await typingPromise;
     replied = true;
     await message.reply(reply);
 
