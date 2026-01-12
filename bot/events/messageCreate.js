@@ -36,7 +36,7 @@ module.exports = async (client, message) => {
 
     /* ================== FIRST TIME (FREE TRIAL) ================== */
     if (!guild) {
-      guild = new Guild({
+      guild = await Guild.create({
         guildId: message.guild.id,
         plan: "FREE",
 
@@ -53,14 +53,12 @@ module.exports = async (client, message) => {
         expiredNotified: false
       });
 
-      await guild.save();
-
       replied = true;
       return message.reply(
         "🎉 فعلنا لك النسخة **FREE** لمدة 7 أيام!\n" +
         "📆 Daily: 500 سطر\n" +
         "📊 Monthly: 10,000 سطر\n\n" +
-        "استمتع واهزر براحتك 😎"
+        "اهزر براحتك 😎🔥"
       );
     }
 
@@ -91,22 +89,20 @@ module.exports = async (client, message) => {
           .setTitle("⏳ انتهت الفترة التجريبية")
           .setDescription(
             `
-🚫 **الشات متوقف حاليًا**
+🚫 **الشات مقفول حاليًا**
 
-خلصت تجربة الـ **7 أيام**  
-علشان ترجع تشتغل بكل القوة 💪
+خلصت تجربة الـ **7 أيام** 😢  
+رجّع القوة الكاملة بتفعيل الاشتراك 💪🔥
 
 😂 GPT هزار  
 🧠 ذكي  
 🖼️ صور  
 🇪🇬 عربي / 🇺🇸 English  
 
-📩 كلم الدعم وفعّل اشتراكك
+📩 كلم الدعم وفعّل الباقة
             `
           )
-          .setFooter({
-            text: "Created by Boody Zuckerberg"
-          });
+          .setFooter({ text: "Created by Boody Zuckerberg 👑" });
 
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
@@ -125,13 +121,13 @@ module.exports = async (client, message) => {
       }
 
       replied = true;
-      return message.reply("🔒 الشات مقفول – كلم الدعم 👆");
+      return message.reply("🔒 الشات واقف – كلم الدعم 👆");
     }
 
-    /* ================== FILTER ================== */
+    /* ================== CONTENT FILTER ================== */
     if (isBlocked(message.content)) {
       replied = true;
-      return message.reply("🚫 الكلام ده مش مسموح 👀");
+      return message.reply("🚫 الكلام ده مش مسموح يا فنان 👀");
     }
 
     /* ================== LIMIT CHECK ================== */
@@ -147,7 +143,7 @@ module.exports = async (client, message) => {
       return message.reply("📆 وصلت للحد الشهري");
     }
 
-    /* ================== LOAD CONTEXT ================== */
+    /* ================== LOAD CONTEXT (LAST 10) ================== */
     const history = await ChatMessage.find({ guildId: guild.guildId })
       .sort({ createdAt: -1 })
       .limit(10)
@@ -173,12 +169,13 @@ module.exports = async (client, message) => {
       plan: guild.plan
     });
 
-    /* ================== GPT ================== */
+    /* ================== GPT RESPONSE ================== */
     await message.channel.sendTyping();
 
     const reply = await askGPT({
       messages: messagesForGPT,
-      plan: guild.plan
+      plan: guild.plan,
+      mood: "FUN" // 🔥 هزار + إيموجي
     });
 
     const botLines = countLines(reply);
