@@ -1,36 +1,126 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: #fff;
-  padding: 20px;
+* {
+  box-sizing: border-box;
 }
 
+body {
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  background: linear-gradient(135deg, #0f172a, #020617);
+  color: #e5e7eb;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* ================== HEADINGS ================== */
 h1 {
   margin-bottom: 20px;
+  font-size: 24px;
+  color: #38bdf8;
 }
 
+/* ================== LOGIN ================== */
 .login {
+  display: flex;
+  gap: 8px;
   margin-bottom: 20px;
 }
 
-input, select, button {
-  padding: 6px;
-  margin: 4px;
-  border-radius: 4px;
-  border: none;
+#info {
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: #94a3b8;
 }
 
-button {
+/* ================== FORM ================== */
+input,
+select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #020617;
+  color: #e5e7eb;
+  outline: none;
+}
+
+input::placeholder {
+  color: #64748b;
+}
+
+select {
   cursor: pointer;
 }
 
-.card {
-  background: #1e293b;
-  padding: 15px;
-  margin-bottom: 10px;
+/* ================== BUTTONS ================== */
+button {
+  padding: 8px 14px;
   border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ================== CARDS ================== */
+.card {
+  background: #020617;
+  padding: 15px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+}
+
+.card b {
+  color: #38bdf8;
 }
 
 .card small {
-  opacity: 0.8;
+  display: block;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* ================== ACTION BUTTON COLORS ================== */
+button[onclick*="resetUsage"] {
+  background: #dc2626;
+}
+
+button[onclick*="resetUsage"]:hover {
+  background: #b91c1c;
+}
+
+button[onclick*="updatePlan"] {
+  background: #16a34a;
+}
+
+button[onclick*="updatePlan"]:hover {
+  background: #15803d;
+}
+
+/* ================== STAFF PAGE ================== */
+h3 {
+  margin-top: 20px;
+  color: #38bdf8;
+}
+
+/* ================== RESPONSIVE ================== */
+@media (max-width: 600px) {
+  .login {
+    flex-direction: column;
+  }
+
+  button,
+  input,
+  select {
+    width: 100%;
+  }
 }
