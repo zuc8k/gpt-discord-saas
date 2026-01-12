@@ -42,6 +42,8 @@ module.exports = async (client, message) => {
         usedLines: 0,
 
         commandUsage: {},
+        dailyCommandUsage: {},
+
         expiresAt: Date.now() + plans.FREE.days * 24 * 60 * 60 * 1000,
         lastReset: new Date()
       });
@@ -56,6 +58,16 @@ module.exports = async (client, message) => {
         "🔗 SERVER SUPPORT"
       );
     }
+
+    // ================== SAFE DEFAULTS (OLD DATA) ==================
+    const planData = plans[guild.plan] || plans.FREE;
+
+    if (!guild.dailyLimit) guild.dailyLimit = planData.dailyLines;
+    if (!guild.monthlyLimit) guild.monthlyLimit = planData.monthlyLines;
+    if (!guild.usedDailyLines) guild.usedDailyLines = 0;
+    if (!guild.lastDailyReset) guild.lastDailyReset = new Date();
+    if (!guild.commandUsage) guild.commandUsage = {};
+    if (!guild.dailyCommandUsage) guild.dailyCommandUsage = {};
 
     // ================== GPT CHANNEL CHECK ==================
     if (guild.gptChannel && message.channel.id !== guild.gptChannel) return;
@@ -78,17 +90,19 @@ module.exports = async (client, message) => {
     if (shouldReset(guild.lastReset)) {
       guild.usedLines = 0;
       guild.commandUsage = {};
+      guild.dailyCommandUsage = {}; // 🔥 مهم
       guild.lastReset = new Date();
 
       await sendLog(client, guild, {
         title: "♻️ Monthly Reset",
-        description: "تم تصفير الاستهلاك الشهري (السطور + الأوامر)"
+        description: "تم تصفير الاستهلاك الشهري (GPT + الأوامر)"
       });
     }
 
     // ================== AUTO RESET DAILY ==================
     if (shouldResetDaily(guild.lastDailyReset)) {
       guild.usedDailyLines = 0;
+      guild.dailyCommandUsage = {};
       guild.lastDailyReset = new Date();
     }
 
