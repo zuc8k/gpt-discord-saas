@@ -1,5 +1,7 @@
 const Guild = require("../../api/models/Guild");
+const plans = require("../../shared/plans");
 const { countLines } = require("../../shared/utils");
+const { shouldReset } = require("../../shared/resetLimits");
 const { askGPT } = require("../services/openai");
 const { sendLog } = require("../services/logger");
 
@@ -7,12 +9,45 @@ module.exports = async (client, message) => {
   if (message.author.bot) return;
   if (!message.guild) return;
 
-  const guild = await Guild.findOne({ guildId: message.guild.id });
-  if (!guild) return;
+  let guild = await Guild.findOne({ guildId: message.guild.id });
 
+  // ================== FIRST TIME (FREE TRIAL) ==================
+  if (!guild) {
+    guild = new Guild({
+      guildId: message.guild.id,
+      plan: "FREE",
+      monthlyLimit: plans.FREE.monthlyLines,
+      yearlyLimit: plans.FREE.yearlyLines,
+      usedLines: 0,
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      lastReset: new Date()
+    });
+
+    await guild.save();
+
+    return message.reply(
+      "🎉 تم تفعيل النسخة التجريبية **FREE** لمدة 7 أيام\n" +
+      "📊 Limit: 10,000 سطر\n" +
+      "🔗 SERVER SUPPORT"
+    );
+  }
+
+  // ================== GPT CHANNEL CHECK ==================
   if (guild.gptChannel && message.channel.id !== guild.gptChannel) return;
 
-  // اشتراك منتهي
+  // ================== AUTO RESET MONTHLY ==================
+  if (shouldReset(guild.lastReset)) {
+    guild.usedLines = 0;
+    guild.lastReset = new Date();
+    await guild.save();
+
+    await sendLog(client, guild, {
+      title: "♻️ Monthly Reset",
+      description: "تم تصفير الاستهلاك الشهري"
+    });
+  }
+
+  // ================== EXPIRED ==================
   if (guild.expiresAt && Date.now() > guild.expiresAt) {
     await sendLog(client, guild, {
       title: "❌ Subscription Expired",
@@ -20,22 +55,28 @@ module.exports = async (client, message) => {
       description: `User: ${message.author.tag}`
     });
 
-    return message.reply("❌ الاشتراك انتهى\n🔗 SERVER SUPPORT");
+    return message.reply(
+      "❌ انتهت مدة الاستخدام\n" +
+      "🔗 SERVER SUPPORT"
+    );
   }
 
+  // ================== LIMIT CHECK ==================
   const userLines = countLines(message.content);
 
-  // ليمت
   if (guild.usedLines + userLines > guild.monthlyLimit) {
     await sendLog(client, guild, {
       title: "⚠️ Limit Reached",
       color: "Yellow",
-      description: `User: ${message.author.tag}\nUsed: ${guild.usedLines}/${guild.monthlyLimit}`
+      description:
+        `User: ${message.author.tag}\n` +
+        `Used: ${guild.usedLines}/${guild.monthlyLimit}`
     });
 
     return message.reply("⚠️ وصلت للحد الأقصى للباقة");
   }
 
+  // ================== GPT RESPONSE ==================
   await message.channel.sendTyping();
 
   try {
@@ -54,7 +95,7 @@ module.exports = async (client, message) => {
         `Total: ${guild.usedLines}/${guild.monthlyLimit}`
     });
 
-    message.reply(reply);
+    await message.reply(reply);
 
   } catch (err) {
     console.error(err);
