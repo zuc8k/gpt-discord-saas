@@ -6,81 +6,108 @@ const openai = new OpenAI({
 
 /*
   ================== PLAN → MODEL CONFIG ==================
-  اتحكم في الجودة / التكلفة من هنا بس
 */
 const PLAN_CONFIG = {
   FREE: {
     model: "gpt-3.5-turbo",
-    maxTokens: 700,
-    system:
-      "You are a helpful assistant. Keep answers short and simple. You can reply in Egyptian Arabic if the user does."
+    maxTokens: 700
   },
-
   PRIME: {
     model: "gpt-4o-mini",
-    maxTokens: 1200,
-    system:
-      "You are a helpful assistant. Be clear and accurate. You may use Egyptian Arabic naturally."
+    maxTokens: 1200
   },
-
   PREMIUM: {
     model: "gpt-4o",
-    maxTokens: 2500,
-    system:
-      "You are an advanced assistant. Give detailed and high-quality answers. Use Egyptian Arabic when appropriate."
+    maxTokens: 2500
   },
-
   MAX: {
     model: "gpt-4.1",
-    maxTokens: 4000,
-    system:
-      "You are a professional AI assistant. Think deeply, answer perfectly, and adapt to the user's language including Egyptian Arabic."
+    maxTokens: 4000
   }
 };
 
-/* =======================================================
-   🧠 HELPER: تجهيز الرسائل
-======================================================= */
-function buildMessages(messages, planConfig) {
-  const hasSystem = messages.some(m => m.role === "system");
+/*
+  ================== SYSTEM PROMPTS (MOODS) ==================
+*/
+const SYSTEM_PROMPTS = {
+  FUN: `
+You are a funny, witty AI assistant.
+- Use emojis naturally 😄🔥
+- You joke, tease lightly, and sound friendly.
+- If the user speaks Arabic, reply in Egyptian Arabic 🇪🇬.
+- If the user speaks English, reply in English 🇺🇸.
+- If asked "who made you", answer confidently:
+  "I'm made by Boody Zuckerberg 👑😎"
+- Be helpful but never boring.
+`,
 
+  FORMAL: `
+You are a professional, polite AI assistant.
+- Clear, accurate, respectful tone.
+- Match the user's language automatically.
+- If asked "who made you", answer:
+  "I was created by Boody Zuckerberg."
+`
+};
+
+/*
+  ================== BUILD MESSAGES ==================
+*/
+function buildMessages(messages, systemPrompt) {
+  const hasSystem = messages.some(m => m.role === "system");
   if (hasSystem) return messages;
 
   return [
-    { role: "system", content: planConfig.system },
+    { role: "system", content: systemPrompt },
     ...messages
   ];
 }
 
-/* =======================================================
-   ✅ askGPT (رد عادي)
-======================================================= */
-async function askGPT({ messages, plan = "FREE" }) {
+/*
+  ================== askGPT (Normal) ==================
+  options:
+  - messages
+  - plan
+  - mood: FUN | FORMAL
+*/
+async function askGPT({
+  messages,
+  plan = "FREE",
+  mood = "FUN"
+}) {
   const config = PLAN_CONFIG[plan] || PLAN_CONFIG.FREE;
+  const systemPrompt = SYSTEM_PROMPTS[mood] || SYSTEM_PROMPTS.FUN;
 
-  const finalMessages = buildMessages(messages, config);
+  const finalMessages = buildMessages(messages, systemPrompt);
 
   const completion = await openai.chat.completions.create({
     model: config.model,
     messages: finalMessages,
-    temperature: 0.7,
+    temperature: mood === "FUN" ? 0.9 : 0.6,
     max_tokens: config.maxTokens
   });
 
   return completion.choices[0].message.content;
 }
 
-/* =======================================================
-   🔥 askGPTStream (Streaming – زي ChatGPT)
-======================================================= */
-async function askGPTStream({ messages, plan = "FREE", onToken }) {
+/*
+  ================== askGPTStream (Streaming) ==================
+*/
+async function askGPTStream({
+  messages,
+  plan = "FREE",
+  mood = "FUN",
+  onToken
+}) {
   const config = PLAN_CONFIG[plan] || PLAN_CONFIG.FREE;
-  const finalMessages = buildMessages(messages, config);
+  const systemPrompt = SYSTEM_PROMPTS[mood] || SYSTEM_PROMPTS.FUN;
+
+  const finalMessages = buildMessages(messages, systemPrompt);
 
   const stream = await openai.chat.completions.create({
     model: config.model,
     messages: finalMessages,
-    temperature: 0.7,
+    temperature: mood === "FUN" ? 0.9 : 0.6,
     max_tokens: config.maxTokens,
     stream: true
   });
@@ -98,23 +125,22 @@ async function askGPTStream({ messages, plan = "FREE", onToken }) {
   return fullText;
 }
 
-/* =======================================================
-   🖼️ askGPTWithImage (دعم الصور)
-======================================================= */
+/*
+  ================== askGPTWithImage (Images) ==================
+*/
 async function askGPTWithImage({
   message,
   imageUrl,
-  plan = "FREE"
+  plan = "FREE",
+  mood = "FUN"
 }) {
   const config = PLAN_CONFIG[plan] || PLAN_CONFIG.FREE;
+  const systemPrompt = SYSTEM_PROMPTS[mood] || SYSTEM_PROMPTS.FUN;
 
   const completion = await openai.chat.completions.create({
     model: config.model === "gpt-3.5-turbo" ? "gpt-4o" : config.model,
     messages: [
-      {
-        role: "system",
-        content: config.system
-      },
+      { role: "system", content: systemPrompt },
       {
         role: "user",
         content: [
