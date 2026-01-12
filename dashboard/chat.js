@@ -1,11 +1,16 @@
+/* ================== ELEMENTS ================== */
 const chatContainer = document.getElementById("chatContainer");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 
-const API_URL = "http://localhost:3001"; // عدّل لو السيرفر مختلف
+/* ================== CONFIG ================== */
+const API_URL = "http://localhost:3001"; // عدّل لو VPS
 const STAFF_TOKEN = localStorage.getItem("STAFF_TOKEN");
 
-// ================== EVENTS ==================
+// مؤقت – بعدين ممكن تجيبه من اختيار جيلد
+const CURRENT_GUILD_ID = localStorage.getItem("CHAT_GUILD_ID") || "TEST_GUILD";
+
+/* ================== EVENTS ================== */
 sendBtn.addEventListener("click", sendMessage);
 
 chatInput.addEventListener("keydown", e => {
@@ -15,7 +20,7 @@ chatInput.addEventListener("keydown", e => {
   }
 });
 
-// ================== SEND MESSAGE ==================
+/* ================== SEND MESSAGE ================== */
 async function sendMessage() {
   const text = chatInput.value.trim();
   if (!text) return;
@@ -33,31 +38,48 @@ async function sendMessage() {
   showTyping();
 
   try {
-    const res = await fetch(`${API_URL}/chat`, {
+    const res = await fetch(`${API_URL}/chat/send`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: STAFF_TOKEN
       },
       body: JSON.stringify({
+        guildId: CURRENT_GUILD_ID,
         message: text
       })
     });
 
     removeTyping();
 
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      addMessage(
-        err.error || "❌ حصل خطأ أثناء الرد",
-        "assistant"
-      );
+      // اشتراك منتهي
+      if (data.code === "EXPIRED") {
+        addMessage("⏳ الاشتراك منتهي، جدده علشان تكمل", "assistant");
+        return;
+      }
+
+      // ليميت يومي
+      if (data.code === "DAILY_LIMIT") {
+        addMessage("🚫 وصلت للحد اليومي للرسائل", "assistant");
+        return;
+      }
+
+      addMessage(data.error || "❌ حصل خطأ غير متوقع", "assistant");
       return;
     }
 
-    const data = await res.json();
-
+    // رد GPT
     addMessage(data.reply, "assistant");
+
+    // عرض معلومات الخطة (اختياري)
+    if (data.plan) {
+      addSystemMessage(
+        `📦 Plan: ${data.plan} | Daily: ${data.usage.daily}/${data.usage.dailyLimit}`
+      );
+    }
 
   } catch (err) {
     console.error("Chat Error:", err);
@@ -66,10 +88,18 @@ async function sendMessage() {
   }
 }
 
-// ================== UI HELPERS ==================
+/* ================== UI HELPERS ================== */
 function addMessage(text, type) {
   const div = document.createElement("div");
   div.className = `message ${type}`;
+  div.textContent = text;
+  chatContainer.appendChild(div);
+  scrollDown();
+}
+
+function addSystemMessage(text) {
+  const div = document.createElement("div");
+  div.className = "message system";
   div.textContent = text;
   chatContainer.appendChild(div);
   scrollDown();
