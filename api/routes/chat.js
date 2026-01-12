@@ -1,19 +1,18 @@
 const router = require("express").Router();
 const Guild = require("../models/Guild");
+const ChatMessage = require("../models/ChatMessage");
+
 const { countLines } = require("../shared/utils");
 const { shouldResetDaily } = require("../shared/resetDaily");
 const { isBlocked } = require("../services/contentFilter");
 
 /*
   POST /chat/send
-  Headers:
-    Authorization: STAFF_TOKEN أو USER_TOKEN (لو حابب)
-
   Body:
-    {
-      guildId: "123",
-      message: "Hello GPT"
-    }
+  {
+    guildId: "123",
+    message: "Hello GPT"
+  }
 */
 
 router.post("/send", async (req, res) => {
@@ -30,11 +29,10 @@ router.post("/send", async (req, res) => {
       return res.status(404).json({ error: "Guild not found" });
     }
 
-    // ================== RESET DAILY (AUTO) ==================
+    // ================== RESET DAILY ==================
     if (shouldResetDaily(guild.lastDailyReset)) {
       guild.usedDailyLines = 0;
       guild.lastDailyReset = new Date();
-      await guild.save();
     }
 
     // ================== EXPIRED ==================
@@ -53,7 +51,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    // ================== COUNT LINES ==================
+    // ================== COUNT USER LINES ==================
     const userLines = countLines(message);
 
     if (userLines > 500) {
@@ -87,12 +85,36 @@ router.post("/send", async (req, res) => {
       });
     }
 
+    // ================== SAVE USER MESSAGE ==================
+    await ChatMessage.create({
+      guildId,
+      role: "user",
+      content: message,
+      plan: guild.plan
+    });
+
     // ================== GPT PLACEHOLDER ==================
-    // 🔥 هنا بعدين تربط OpenAI / Local LLM
+    // 🔥 هنا بعدين تربط OpenAI / Groq / Local LLM
     const replyText = `🤖 GPT says:\n"${message}"`;
 
     const botLines = countLines(replyText);
     const totalLines = userLines + botLines;
+
+    // ================== CHECK BOT USAGE ==================
+    if (guild.usedDailyLines + totalLines > guild.dailyLimit) {
+      return res.status(403).json({
+        code: "DAILY_LIMIT",
+        message: "Daily limit reached after response"
+      });
+    }
+
+    // ================== SAVE BOT MESSAGE ==================
+    await ChatMessage.create({
+      guildId,
+      role: "assistant",
+      content: replyText,
+      plan: guild.plan
+    });
 
     // ================== UPDATE USAGE ==================
     guild.usedDailyLines += totalLines;
@@ -114,6 +136,25 @@ router.post("/send", async (req, res) => {
   } catch (err) {
     console.error("❌ Chat error:", err);
     res.status(500).json({ error: "Chat failed" });
+  }
+});
+
+/*
+  GET /chat/history/:guildId
+*/
+router.get("/history/:guildId", async (req, res) => {
+  try {
+    const { guildId } = req.params;
+
+    const messages = await ChatMessage
+      .find({ guildId })
+      .sort({ createdAt: 1 })
+      .limit(100);
+
+    res.json(messages);
+
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load history" });
   }
 });
 
