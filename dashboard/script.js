@@ -7,9 +7,14 @@ let STAFF_USERNAME = null;
 /* ================== LOGS CACHE ================== */
 let ALL_LOGS = [];
 
+/* ================== CURRENT PLAN (UI) ================== */
+let CURRENT_PLAN = "FREE";
+
 /* ================== AUTO LOGIN ================== */
 document.addEventListener("DOMContentLoaded", () => {
   highlightMenu();
+  initPlanSwitcher();
+
   if (STAFF_TOKEN) login(true);
 });
 
@@ -47,6 +52,7 @@ async function login(silent = false, requireRole = null) {
   localStorage.setItem("STAFF_TOKEN", token);
 
   fillProfile();
+  loadCurrentPlanUI();
 
   if (document.getElementById("guilds")) loadGuilds();
   if (document.getElementById("staffList")) loadStaff();
@@ -68,6 +74,45 @@ function fillProfile() {
     avatarEl.textContent =
       STAFF_USERNAME?.charAt(0)?.toUpperCase() || "👤";
   }
+}
+
+/* ================== PLAN SWITCHER (CHATGPT STYLE) ================== */
+function initPlanSwitcher() {
+  const btn = document.getElementById("planBtn");
+  const dropdown = document.getElementById("planDropdown");
+
+  if (!btn || !dropdown) return;
+
+  btn.addEventListener("click", () => {
+    dropdown.classList.toggle("show");
+  });
+
+  document.addEventListener("click", e => {
+    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.remove("show");
+    }
+  });
+}
+
+function loadCurrentPlanUI() {
+  // افتراضيًا – تقدر تجيبها من API بعدين
+  setPlanUI(CURRENT_PLAN);
+}
+
+function setPlanUI(plan) {
+  CURRENT_PLAN = plan;
+
+  const label = document.getElementById("currentPlan");
+  if (label) label.textContent = plan;
+
+  document.querySelectorAll(".plan-item").forEach(item => {
+    item.classList.toggle("active", item.dataset.plan === plan);
+  });
+}
+
+function selectPlan(plan) {
+  setPlanUI(plan);
+  document.getElementById("planDropdown")?.classList.remove("show");
 }
 
 /* ================== MENU ACTIVE ================== */
@@ -232,36 +277,14 @@ function renderLogs() {
   const container = document.getElementById("logs");
   if (!container) return;
 
-  const search = document.getElementById("searchInput")?.value.toLowerCase() || "";
-  const action = document.getElementById("actionFilter")?.value || "";
-  const sort = document.getElementById("sortFilter")?.value || "desc";
-
-  let logs = [...ALL_LOGS];
-
-  if (search) {
-    logs = logs.filter(l =>
-      l.action?.toLowerCase().includes(search) ||
-      l.guildId?.toLowerCase().includes(search) ||
-      l.staff?.username?.toLowerCase().includes(search)
-    );
-  }
-
-  if (action) logs = logs.filter(l => l.action === action);
-
-  logs.sort((a, b) => {
-    const da = new Date(a.createdAt);
-    const db = new Date(b.createdAt);
-    return sort === "asc" ? da - db : db - da;
-  });
-
   container.innerHTML = "";
 
-  if (!logs.length) {
+  if (!ALL_LOGS.length) {
     container.innerHTML = `<div class="card">No logs found</div>`;
     return;
   }
 
-  logs.forEach(log => {
+  ALL_LOGS.forEach(log => {
     const div = document.createElement("div");
     div.className = "card";
 
