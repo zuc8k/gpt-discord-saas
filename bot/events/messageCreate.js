@@ -2,12 +2,20 @@ const Guild = require("../../api/models/Guild");
 const plans = require("../../shared/plans");
 const { countLines } = require("../../shared/utils");
 const { shouldReset } = require("../../shared/resetLimits");
+
 const { askGPT } = require("../services/openai");
 const { sendLog } = require("../services/logger");
+const { isBlocked } = require("../services/contentFilter");
+const { checkSpam } = require("../services/antiSpam");
 
 module.exports = async (client, message) => {
   if (message.author.bot) return;
   if (!message.guild) return;
+
+  // ================== ANTI SPAM ==================
+  if (checkSpam(message.author.id)) {
+    return message.reply("⏳ استنى شوية قبل ما تبعت تاني");
+  }
 
   let guild = await Guild.findOne({ guildId: message.guild.id });
 
@@ -34,6 +42,19 @@ module.exports = async (client, message) => {
 
   // ================== GPT CHANNEL CHECK ==================
   if (guild.gptChannel && message.channel.id !== guild.gptChannel) return;
+
+  // ================== CONTENT FILTER ==================
+  if (isBlocked(message.content)) {
+    await sendLog(client, guild, {
+      title: "🚫 Blocked Content",
+      color: "Red",
+      description:
+        `User: ${message.author.tag}\n` +
+        `Message: ${message.content.slice(0, 200)}`
+    });
+
+    return message.reply("🚫 الطلب غير مسموح");
+  }
 
   // ================== AUTO RESET MONTHLY ==================
   if (shouldReset(guild.lastReset)) {
@@ -63,6 +84,10 @@ module.exports = async (client, message) => {
 
   // ================== LIMIT CHECK ==================
   const userLines = countLines(message.content);
+
+  if (userLines > 500) {
+    return message.reply("⚠️ الرسالة طويلة جدًا");
+  }
 
   if (guild.usedLines + userLines > guild.monthlyLimit) {
     await sendLog(client, guild, {
@@ -106,6 +131,6 @@ module.exports = async (client, message) => {
       description: err.message
     });
 
-    message.reply("❌ حصل خطأ في الذكاء الاصطناعي");
+    message.reply("❌ حصل خطأ مؤقت، حاول لاحقًا");
   }
 };
