@@ -19,6 +19,7 @@ router.post("/send", async (req, res) => {
   try {
     const { guildId, message } = req.body;
 
+    /* ================== VALIDATION ================== */
     if (!guildId || !message?.trim()) {
       return res.status(400).json({ error: "Missing data" });
     }
@@ -29,7 +30,7 @@ router.post("/send", async (req, res) => {
       return res.status(404).json({ error: "Guild not found" });
     }
 
-    /* ================== RESET DAILY ================== */
+    /* ================== DAILY RESET ================== */
     if (shouldResetDaily(guild.lastDailyReset)) {
       guild.usedDailyLines = 0;
       guild.lastDailyReset = new Date();
@@ -62,7 +63,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    /* ================== DAILY LIMIT (USER) ================== */
+    /* ================== LIMIT CHECK (USER ONLY) ================== */
     if (guild.usedDailyLines + userLines > guild.dailyLimit) {
       return res.status(403).json({
         code: "DAILY_LIMIT",
@@ -74,7 +75,6 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    /* ================== MONTHLY LIMIT (USER) ================== */
     if (guild.usedLines + userLines > guild.monthlyLimit) {
       return res.status(403).json({
         code: "MONTHLY_LIMIT",
@@ -99,7 +99,6 @@ router.post("/send", async (req, res) => {
         content: m.content
       }));
 
-    // أضف رسالة المستخدم الحالية
     messagesForGPT.push({
       role: "user",
       content: message
@@ -122,7 +121,7 @@ router.post("/send", async (req, res) => {
     const botLines = countLines(replyText);
     const totalLines = userLines + botLines;
 
-    /* ================== DAILY LIMIT (AFTER BOT) ================== */
+    /* ================== LIMIT CHECK (AFTER BOT) ================== */
     if (guild.usedDailyLines + totalLines > guild.dailyLimit) {
       return res.status(403).json({
         code: "DAILY_LIMIT",
@@ -130,7 +129,6 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    /* ================== MONTHLY LIMIT (AFTER BOT) ================== */
     if (guild.usedLines + totalLines > guild.monthlyLimit) {
       return res.status(403).json({
         code: "MONTHLY_LIMIT",
@@ -176,14 +174,14 @@ router.get("/history/:guildId", async (req, res) => {
   try {
     const { guildId } = req.params;
 
-    const messages = await ChatMessage
-      .find({ guildId })
+    const messages = await ChatMessage.find({ guildId })
       .sort({ createdAt: 1 })
       .limit(100);
 
     res.json(messages);
 
   } catch (err) {
+    console.error("❌ History error:", err);
     res.status(500).json({ error: "Failed to load history" });
   }
 });
