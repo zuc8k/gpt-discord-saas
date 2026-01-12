@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const guildSchema = new mongoose.Schema({
   guildId: { type: String, unique: true },
+
   plan: { type: String, default: "FREE" },
 
   expiresAt: Date,
