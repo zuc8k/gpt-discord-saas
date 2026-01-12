@@ -13,9 +13,15 @@ const client = new Client({
 });
 
 // ================== DATABASE ==================
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.error("❌ Mongo Error:", err));
+(async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("✅ MongoDB Connected");
+  } catch (err) {
+    console.error("❌ MongoDB Connection Failed:", err);
+    process.exit(1); // وقف البوت لو DB وقعت
+  }
+})();
 
 // ================== COMMANDS (HOT RELOAD) ==================
 const { loadCommands } = require("./handlers/commandHandler");
@@ -36,5 +42,23 @@ client.once("ready", () => {
   console.log(`🤖 Bot Online: ${client.user.tag}`);
 });
 
+// ================== GRACEFUL SHUTDOWN ==================
+process.on("SIGINT", async () => {
+  console.log("🛑 Shutting down...");
+  await mongoose.disconnect();
+  client.destroy();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.log("🛑 Shutting down...");
+  await mongoose.disconnect();
+  client.destroy();
+  process.exit(0);
+});
+
 // ================== LOGIN ==================
-client.login(process.env.BOT_TOKEN);
+client.login(process.env.BOT_TOKEN).catch(err => {
+  console.error("❌ Discord Login Failed:", err);
+  process.exit(1);
+});
