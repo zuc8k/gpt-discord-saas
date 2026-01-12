@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Staff Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>👥 Staff Management (OWNER)</h1>
+
+  <div class="login">
+    <input type="password" id="token" placeholder="OWNER TOKEN">
+    <button onclick="loginStaff()">Login</button>
+  </div>
+
+  <div id="info"></div>
+
+  <hr>
+
+  <h3>➕ Create Staff</h3>
+  <input type="text" id="username" placeholder="Username">
+  <select id="role">
+    <option value="ADMIN">ADMIN</option>
+    <option value="SUPPORT">SUPPORT</option>
+  </select>
+  <button onclick="createStaff()">Create</button>
+
+  <hr>
+
+  <h3>📋 Staff List</h3>
+  <div id="staffList"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
