@@ -11,11 +11,11 @@ const plans = require("../../shared/plans");
 
 module.exports = async (client, guild) => {
   try {
-    // ================== CHECK DB ==================
+    /* ================== CHECK DB ================== */
     const exists = await Guild.findOne({ guildId: guild.id });
     if (exists) return;
 
-    // ================== CREATE GUILD ==================
+    /* ================== CREATE GUILD ================== */
     const newGuild = await Guild.create({
       guildId: guild.id,
       plan: "FREE",
@@ -30,11 +30,14 @@ module.exports = async (client, guild) => {
       lastDailyReset: new Date(),
       lastReset: new Date(),
 
-      expiresAt: Date.now() + plans.FREE.days * 24 * 60 * 60 * 1000
+      expiresAt: Date.now() + plans.FREE.days * 24 * 60 * 60 * 1000,
+
+      // 🔥 مهم علشان انتهاء التجربة
+      expiredNotified: false
     });
 
-    // ================== FIND CHANNEL ==================
-    let channel =
+    /* ================== FIND CHANNEL ================== */
+    const channel =
       guild.systemChannel ||
       guild.channels.cache.find(c =>
         c.isTextBased() &&
@@ -44,7 +47,7 @@ module.exports = async (client, guild) => {
 
     if (!channel) return;
 
-    // ================== EMBED ==================
+    /* ================== EMBED ================== */
     const embed = new EmbedBuilder()
       .setColor("#5865F2")
       .setTitle("🤖 GPT Bot Activated Successfully!")
@@ -52,10 +55,10 @@ module.exports = async (client, guild) => {
         `
 🎉 **أهلاً بيكم في عالم الذكاء الاصطناعي 😎**
 
-أنا **GPT Bot**  
-هزار شوية 🤪  
-ذكي شوية 🧠  
-ومصري على مزاجك 🇪🇬🔥  
+أنا **GPT Bot**
+😂 هزار
+🧠 ذكي
+🇪🇬 مصري على مزاجك
 
 🎁 **Free Trial – 7 Days**
 • شات GPT كامل  
@@ -81,7 +84,7 @@ module.exports = async (client, guild) => {
       })
       .setTimestamp();
 
-    // ================== BUTTON ==================
+    /* ================== BUTTON ================== */
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setLabel("💬 Support Server")
@@ -89,7 +92,7 @@ module.exports = async (client, guild) => {
         .setURL("https://discord.gg/YOUR_SUPPORT_SERVER") // 🔴 غير الرابط
     );
 
-    // ================== SEND ==================
+    /* ================== SEND ================== */
     await channel.send({
       embeds: [embed],
       components: [row]
