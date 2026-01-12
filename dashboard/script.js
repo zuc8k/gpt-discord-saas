@@ -4,13 +4,16 @@ let STAFF_TOKEN = localStorage.getItem("STAFF_TOKEN");
 let STAFF_ROLE = null;
 let STAFF_USERNAME = null;
 
+/* ================== LOGS CACHE ================== */
+let ALL_LOGS = [];
+
 /* ================== AUTO LOGIN ================== */
 document.addEventListener("DOMContentLoaded", () => {
   highlightMenu();
   if (STAFF_TOKEN) login(true);
 });
 
-/* ================== LOGIN ================== */
+/* ================== LOGIN CORE ================== */
 async function login(silent = false, requireRole = null) {
   const tokenInput = document.getElementById("token");
   const token = STAFF_TOKEN || tokenInput?.value;
@@ -47,6 +50,7 @@ async function login(silent = false, requireRole = null) {
 
   if (document.getElementById("guilds")) loadGuilds();
   if (document.getElementById("staffList")) loadStaff();
+  if (document.getElementById("logs")) loginLogs();
 
   return true;
 }
@@ -61,7 +65,8 @@ function fillProfile() {
   if (roleEl) roleEl.textContent = STAFF_ROLE;
 
   if (avatarEl) {
-    avatarEl.textContent = STAFF_USERNAME?.charAt(0).toUpperCase() || "👤";
+    avatarEl.textContent =
+      STAFF_USERNAME?.charAt(0)?.toUpperCase() || "👤";
   }
 }
 
@@ -202,6 +207,69 @@ async function loadStaff() {
       <small>Role: ${s.role}</small>
       <small>${new Date(s.createdAt).toLocaleString()}</small>
       <button onclick="deleteStaff('${s.username}')">Delete</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+/* ================== LOGS ================== */
+async function loginLogs() {
+  const ok = await login(true);
+  if (!ok) return;
+
+  const res = await fetch(`${API_URL}/admin/logs`, {
+    headers: { Authorization: STAFF_TOKEN }
+  });
+
+  if (!res.ok) return alert("❌ Failed to load logs");
+
+  ALL_LOGS = await res.json();
+  renderLogs();
+}
+
+function renderLogs() {
+  const container = document.getElementById("logs");
+  if (!container) return;
+
+  const search = document.getElementById("searchInput")?.value.toLowerCase() || "";
+  const action = document.getElementById("actionFilter")?.value || "";
+  const sort = document.getElementById("sortFilter")?.value || "desc";
+
+  let logs = [...ALL_LOGS];
+
+  if (search) {
+    logs = logs.filter(l =>
+      l.action?.toLowerCase().includes(search) ||
+      l.guildId?.toLowerCase().includes(search) ||
+      l.staff?.username?.toLowerCase().includes(search)
+    );
+  }
+
+  if (action) logs = logs.filter(l => l.action === action);
+
+  logs.sort((a, b) => {
+    const da = new Date(a.createdAt);
+    const db = new Date(b.createdAt);
+    return sort === "asc" ? da - db : db - da;
+  });
+
+  container.innerHTML = "";
+
+  if (!logs.length) {
+    container.innerHTML = `<div class="card">No logs found</div>`;
+    return;
+  }
+
+  logs.forEach(log => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <b>${log.action}</b>
+      <small>👤 ${log.staff?.username || "System"}</small>
+      <small>🏠 ${log.guildId || "-"}</small>
+      <small>🕒 ${new Date(log.createdAt).toLocaleString()}</small>
     `;
 
     container.appendChild(div);
