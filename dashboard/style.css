@@ -15,18 +15,15 @@
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-  background: radial-gradient(
-      circle at top,
-      rgba(56, 189, 248, 0.08),
-      transparent 40%
-    ),
+  background:
+    radial-gradient(circle at top, rgba(56,189,248,.08), transparent 40%),
     linear-gradient(135deg, #020617, #020617);
   color: #e5e7eb;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* Overlay glow */
+/* Glow overlay */
 body::before {
   content: "";
   position: fixed;
@@ -38,16 +35,86 @@ body::before {
   z-index: -1;
 }
 
+/* ================== TOP PLAN SWITCHER (CHATGPT STYLE) ================== */
+.plan-switcher {
+  position: fixed;
+  top: 14px;
+  right: 20px;
+  z-index: 50;
+}
+
+.plan-btn {
+  background: rgba(2,6,23,.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(56,189,248,.25);
+  color: #e5e7eb;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
+}
+
+.plan-btn span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+.plan-btn small {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Dropdown */
+.plan-dropdown {
+  margin-top: 8px;
+  background: rgba(2,6,23,.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(56,189,248,.2);
+  border-radius: 14px;
+  overflow: hidden;
+  display: none;
+  box-shadow: 0 20px 50px rgba(0,0,0,.6);
+}
+
+.plan-dropdown.show {
+  display: block;
+}
+
+.plan-item {
+  padding: 12px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background .2s;
+}
+
+.plan-item:hover {
+  background: rgba(56,189,248,.15);
+}
+
+.plan-item.active {
+  background: linear-gradient(135deg,#2563eb,#1d4ed8);
+  color: #fff;
+}
+
 /* ================== LAYOUT ================== */
 .layout {
   display: flex;
   min-height: 100vh;
+  padding-top: 70px; /* space for top switcher */
 }
 
 /* ================== SIDEBAR ================== */
 .sidebar {
   width: 260px;
-  background: rgba(2, 6, 23, 0.75);
+  background: rgba(2,6,23,.75);
   backdrop-filter: blur(14px);
   border-right: 1px solid rgba(56,189,248,.15);
   padding: 20px;
@@ -86,7 +153,7 @@ body::before {
 }
 
 .menu a.active {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg,#2563eb,#1d4ed8);
   color: #fff;
   box-shadow: 0 8px 25px rgba(37,99,235,.4);
 }
@@ -105,7 +172,7 @@ body::before {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background: linear-gradient(135deg,#2563eb,#7c3aed);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -135,11 +202,6 @@ h1 {
   text-shadow: 0 0 12px rgba(56,189,248,.25);
 }
 
-h3 {
-  margin-top: 24px;
-  color: #38bdf8;
-}
-
 /* ================== LOGIN ================== */
 .login {
   display: flex;
@@ -165,43 +227,20 @@ input, select {
   outline: none;
 }
 
-input::placeholder {
-  color: #64748b;
-}
-
-input:focus, select:focus {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 2px rgba(56,189,248,.25);
-}
-
 /* ================== BUTTONS ================== */
 button {
   padding: 9px 16px;
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg,#2563eb,#1d4ed8);
   color: #fff;
   font-size: 13px;
-  transition: transform .08s, box-shadow .2s;
   box-shadow: 0 8px 25px rgba(37,99,235,.25);
 }
 
 button:hover {
   box-shadow: 0 12px 35px rgba(37,99,235,.45);
-}
-button:active { transform: scale(.96); }
-button:disabled { opacity:.5; }
-
-/* ACTION COLORS */
-button[onclick*="updatePlan"] {
-  background: linear-gradient(135deg,#16a34a,#15803d);
-}
-button[onclick*="resetUsage"] {
-  background: linear-gradient(135deg,#dc2626,#b91c1c);
-}
-button[onclick*="deleteStaff"] {
-  background: linear-gradient(135deg,#7c2d12,#9a3412);
 }
 
 /* ================== CARDS ================== */
@@ -212,24 +251,9 @@ button[onclick*="deleteStaff"] {
   margin-bottom: 16px;
   border-radius: 14px;
   border: 1px solid rgba(56,189,248,.15);
-  transition: transform .15s, box-shadow .2s;
 }
-
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 20px 50px rgba(0,0,0,.5);
-}
-
-.card b { color:#38bdf8; }
-.card small { display:block; margin-top:4px; opacity:.85; }
 
 /* ================== RESPONSIVE ================== */
-@media (max-width: 900px) {
-  .sidebar {
-    width: 220px;
-  }
-}
-
 @media (max-width: 700px) {
   .layout {
     flex-direction: column;
@@ -238,13 +262,7 @@ button[onclick*="deleteStaff"] {
   .sidebar {
     width: 100%;
     flex-direction: row;
-    align-items: center;
     gap: 12px;
-  }
-
-  .menu {
-    flex-direction: row;
-    flex-wrap: wrap;
   }
 
   .profile {
