@@ -7,32 +7,75 @@
 </head>
 <body>
 
-  <!-- ⭐ STAR BACKGROUND -->
+  <!-- ⭐ Stars Background -->
   <canvas id="stars"></canvas>
 
-  <h1>👥 Staff Management (OWNER)</h1>
+  <div class="layout">
 
-  <div class="login">
-    <input type="password" id="token" placeholder="OWNER TOKEN">
-    <button onclick="loginStaff()">Login</button>
+    <!-- ================== SIDEBAR ================== -->
+    <aside class="sidebar">
+
+      <!-- LOGO -->
+      <div class="logo">
+        🤖 GPT Bot
+      </div>
+
+      <!-- MENU -->
+      <nav class="menu">
+        <a href="index.html" id="nav-dashboard">🏠 Dashboard</a>
+        <a href="staff.html" id="nav-staff" class="active">👥 Staff</a>
+        <a href="logs.html" id="nav-logs">🧾 Logs</a>
+      </nav>
+
+      <!-- USER PROFILE (BOTTOM) -->
+      <div class="profile">
+        <div class="avatar" id="profileAvatar">👤</div>
+        <div class="info">
+          <span id="profileName">Guest</span>
+          <small id="profileRole">---</small>
+        </div>
+      </div>
+
+      <!-- LOGOUT -->
+      <button
+        style="margin-top: 12px; width: 100%;"
+        onclick="logout()">
+        Logout
+      </button>
+
+    </aside>
+
+    <!-- ================== CONTENT ================== -->
+    <main class="content">
+
+      <h1>👥 Staff Management (OWNER)</h1>
+
+      <!-- LOGIN -->
+      <div class="login">
+        <input type="password" id="token" placeholder="OWNER TOKEN">
+        <button onclick="loginStaff()">Login</button>
+      </div>
+
+      <div id="info"></div>
+
+      <hr>
+
+      <h3>➕ Create Staff</h3>
+      <input type="text" id="username" placeholder="Username">
+      <select id="role">
+        <option value="ADMIN">ADMIN</option>
+        <option value="SUPPORT">SUPPORT</option>
+      </select>
+      <button onclick="createStaff()">Create</button>
+
+      <hr>
+
+      <h3>📋 Staff List</h3>
+      <div id="staffList"></div>
+
+    </main>
+
   </div>
-
-  <div id="info"></div>
-
-  <hr>
-
-  <h3>➕ Create Staff</h3>
-  <input type="text" id="username" placeholder="Username">
-  <select id="role">
-    <option value="ADMIN">ADMIN</option>
-    <option value="SUPPORT">SUPPORT</option>
-  </select>
-  <button onclick="createStaff()">Create</button>
-
-  <hr>
-
-  <h3>📋 Staff List</h3>
-  <div id="staffList"></div>
 
   <!-- Scripts -->
   <script src="stars.js"></script>
