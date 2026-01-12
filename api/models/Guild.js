@@ -17,7 +17,7 @@ const guildSchema = new mongoose.Schema({
 
   expiresAt: Date,
 
-  // ================== LIMITS ==================
+  // ================== MONTHLY / YEARLY LIMITS ==================
   monthlyLimit: {
     type: Number,
     default: 0
@@ -33,6 +33,27 @@ const guildSchema = new mongoose.Schema({
     default: 0
   },
 
+  lastReset: {
+    type: Date,
+    default: Date.now
+  },
+
+  // ================== DAILY LIMITS ==================
+  dailyLimit: {
+    type: Number,
+    default: 0
+  },
+
+  usedDailyLines: {
+    type: Number,
+    default: 0
+  },
+
+  lastDailyReset: {
+    type: Date,
+    default: Date.now
+  },
+
   // ================== COMMAND LIMITS ==================
   // مثال:
   // { ask: 3, upgrade: 1 }
@@ -40,11 +61,6 @@ const guildSchema = new mongoose.Schema({
     type: Map,
     of: Number,
     default: {}
-  },
-
-  lastReset: {
-    type: Date,
-    default: Date.now
   },
 
   // ================== CHANNELS ==================
